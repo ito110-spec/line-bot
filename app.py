@@ -33,6 +33,12 @@ quotes = [
     "今あるものに感謝しよう。"
 ]
 
+def pick_from_list(user_id, today_str, data_list, tag):
+    key = f"{user_id}_{today_str}_{tag}"
+    hash_value = hashlib.sha256(key.encode()).hexdigest()
+    number = int(hash_value, 16)
+    index = number % len(data_list)
+    return data_list[index]
 
 def get_fortune(user_id):
     today_str = datetime.date.today().isoformat()
@@ -78,7 +84,7 @@ def callback():
 #占い用変更済み
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    user_msg = event.message.text.lower()
+    user_msg = event.message.text.strip().lower()
 
     if user_msg in ["今日の占い", "うらない", "占い"]:
         user_id = event.source.user_id
