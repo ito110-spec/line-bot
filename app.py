@@ -8,7 +8,8 @@ import os
 import hashlib
 import datetime
 
-fortune_list = [
+# 各カテゴリのリストを用意
+general_fortunes = [
     "🌞 チャンスの多い一日！やるなら今日！",
     "🌤 落ち着いていけば大丈夫。焦らず◎",
     "☁ 少し不安定。人と比べずマイペースで。",
@@ -16,13 +17,42 @@ fortune_list = [
     "🌈 意外なところに運がある予感…！"
 ]
 
+lucky_items = [
+    "赤いペン", "スマホスタンド", "缶コーヒー", "折りたたみ傘", "お気に入りのアプリ"
+]
+
+lucky_colors = [
+    "ブルー", "グリーン", "イエロー", "オレンジ", "ピンク"
+]
+
+quotes = [
+    "焦らずゆっくり、自分のペースでOK。",
+    "笑顔は最高の魔法。",
+    "小さな努力が未来を変える。",
+    "他人の評価より、自分の気持ちを大切に。",
+    "今あるものに感謝しよう。"
+]
+
+
 def get_fortune(user_id):
-    today = datetime.date.today().isoformat()
-    key = user_id + today
-    hash_value = hashlib.sha256(key.encode()).hexdigest()
-    number = int(hash_value, 16)
-    index = number % len(fortune_list)
-    return fortune_list[index]
+    today_str = datetime.date.today().isoformat()
+
+    general = pick_from_list(user_id, today_str, general_fortunes, "general")
+    item = pick_from_list(user_id, today_str, lucky_items, "item")
+    color = pick_from_list(user_id, today_str, lucky_colors, "color")
+    quote = pick_from_list(user_id, today_str, quotes, "quote")
+
+    return f"""🔮 今日の占い 🔮
+
+🧭 総合運：{general}
+
+🎁 ラッキーアイテム：{item}
+🎨 ラッキーカラー：{color}
+
+💬 今日のひとこと：
+「{quote}」
+"""
+
 #################
 
 app = Flask(__name__)
