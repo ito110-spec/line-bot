@@ -34,6 +34,17 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=result)
         )
+    elif user_msg == "流行検索":
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="検索したい単語を入力してください（例：新潟、駅）")
+        )
+    elif "," in user_msg or "、" in user_msg or len(user_msg) > 1:
+        result = get_related_words(user_msg)
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=result)
+        )
     else:
         reply_msg = f"あなたが送ったメッセージ：{event.message.text}"
         line_bot_api.reply_message(
