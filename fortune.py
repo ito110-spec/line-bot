@@ -1,6 +1,7 @@
 # fortune.py
 import hashlib
 import datetime
+from datetime import datetime, timedelta, timezone
 
 # 各カテゴリのリスト
 general_fortunes = [
