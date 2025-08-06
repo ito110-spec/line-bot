@@ -5,6 +5,7 @@ import os
 
 # ← ここで読み込み
 from fortune import get_fortune
+from trend import get_related_words
 
 app = Flask(__name__)
 
@@ -23,34 +24,40 @@ def callback():
 
     return "OK"
 
+user_state = {}
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    user_id = event.source.user_id
     user_msg = event.message.text.strip().lower()
 
     if user_msg in ["今日の占い", "うらない", "占い"]:
-        user_id = event.source.user_id
         result = get_fortune(user_id)
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=result)
         )
+
     elif user_msg == "流行検索":
+        user_state[user_id] = "awaiting_keyword"
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="検索したい単語を入力してください（例：新潟、駅）")
         )
-    elif "," in user_msg or "、" in user_msg or len(user_msg) > 1:
-        result = get_related_words(user_msg)
+
+    elif user_state.get(user_id) == "awaiting_keyword":
+        result = get_related_words(user_msg)  # ←ここを実装しておく必要あり！
+        user_state[user_id] = None  # 状態リセット
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=result)
         )
+
     else:
         reply_msg = f"あなたが送ったメッセージ：{event.message.text}"
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=reply_msg)
         )
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
