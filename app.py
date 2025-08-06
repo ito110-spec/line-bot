@@ -59,5 +59,12 @@ def handle_message(event):
             event.reply_token,
             TextSendMessage(text=reply_msg)
         )
+######################
+import certifi
+import os
+
+print("certifi cacert.pem path:", certifi.where())
+print("SSL_CERT_FILE env:", os.environ.get("SSL_CERT_FILE"))
+######################
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
