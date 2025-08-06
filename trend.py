@@ -65,7 +65,7 @@ def get_related_keywords(user_input: str) -> str:
         # 上昇ワード抽出（最初の語から）
         rising = related.get(query_terms[0], {}).get("rising")
 
-        if not rising or rising.empty:
+        if rising is None or rising.empty:
             return "関連ワードが見つかりませんでした。"
 
         result = f"『{'、'.join(query_terms)}』の関連ワードTOP10（上昇中）：\n\n"
