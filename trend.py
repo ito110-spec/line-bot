@@ -62,20 +62,33 @@ def get_related_keywords(user_input: str) -> str:
         pytrends.build_payload(query_terms, timeframe="now 1-H", geo="JP")
         related = pytrends.related_queries()
 
-        # 上昇ワード抽出（最初の語から）
         rising = related.get(query_terms[0], {}).get("rising")
 
         if rising is None or rising.empty:
             return "関連ワードが見つかりませんでした。"
 
+        # 検索語句群をすべて結合して除外対象のセットを作る
+        exclude_words = set(query_terms)
+        exclude_words.add(" ".join(query_terms))  # 例えば「渋谷 横丁」
+
         result = f"『{'、'.join(query_terms)}』の関連ワードTOP10（上昇中）：\n\n"
-        for i, row in enumerate(rising.itertuples(), 1):
-            result += f"{i}. {row.query}（+{row.value}）\n"
+        count = 0
+        for row in rising.itertuples():
+            # 除外語に含まれていなければ表示
+            if row.query not in exclude_words:
+                count += 1
+                result += f"{count}. {row.query}（+{row.value}）\n"
+                if count >= 10:
+                    break
+
+        if count == 0:
+            return "関連ワードが見つかりませんでした。"
 
         return result
 
     except Exception as e:
         return f"エラーが発生しました：{e}"
+
 
 
 def handle_trend_search(user_id: str, user_input: str) -> str:
