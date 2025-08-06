@@ -5,7 +5,7 @@ import os
 
 # ← ここで読み込み
 from fortune import get_fortune
-from trend import get_related_words
+from trend import handle_trend_search
 
 app = Flask(__name__)
 
@@ -46,8 +46,8 @@ def handle_message(event):
         )
 
     elif user_state.get(user_id) == "awaiting_keyword":
-        result = get_related_words(user_msg)  # ←ここを実装しておく必要あり！
         user_state[user_id] = None  # 状態リセット
+        result = handle_trend_search(user_id, user_msg)
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=result)
