@@ -39,9 +39,9 @@ def can_use_trend(user_id):
     logs = user_access_log.get(user_id, [])
     logs = [t for t in logs if now - t < timedelta(minutes=5)]
 
-    if len(logs) >= 5:
-        cooldown_users[user_id] = now + timedelta(minutes=10)
-        return False, "5回使いました！10分間クールタイムです。"
+    if len(logs) >= 4:
+        cooldown_users[user_id] = now + timedelta(minutes=15)
+        return False, "4回使いました！15分間クールタイムです。"
 
     # 使用可能 → 時間記録を更新
     logs.append(now)
@@ -102,5 +102,5 @@ def handle_trend_search(user_id: str, user_input: str) -> str:
     if not can_use:
         return reason
 
-    time.sleep(random.randint(5, 10))  # レート制限対策
+    time.sleep(random.randint(30, 40))  # レート制限対策
     return get_related_keywords(user_input)
