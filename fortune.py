@@ -35,7 +35,11 @@ def pick_from_list(user_id, today_str, data_list, tag):
     return data_list[index]
 
 def get_fortune(user_id):
-    today_str = datetime.date.today().isoformat()
+    JST = timezone(timedelta(hours=9))
+    now_jst = datetime.now(JST)
+
+    # ここで日付や時間を使った処理を行う
+    today_str = now_jst.strftime('%Y-%m-%d')
 
     general = pick_from_list(user_id, today_str, general_fortunes, "general")
     item = pick_from_list(user_id, today_str, lucky_items, "item")
@@ -43,12 +47,9 @@ def get_fortune(user_id):
     quote = pick_from_list(user_id, today_str, quotes, "quote")
 
     return f"""🔮 今日の占い 🔮
-
 🧭 総合運：{general}
-
-🎁 ラッキーアイテム：{item}
-🎨 ラッキーカラー：{color}
-
-💬 今日のひとこと：
+🎁 ﾗｯｷｰｱｲﾃﾑ：{item}
+🎨 ﾗｯｷｰｶﾗｰ：{color}
+💬 今日の一言：
 「{quote}」
 """
