@@ -71,14 +71,14 @@ def get_related_keywords(user_input: str) -> str:
         exclude_words = set(query_terms)
         exclude_words.add(" ".join(query_terms))  # 例えば「渋谷 横丁」
 
-        result = f"『{'、'.join(query_terms)}』の関連ワードTOP10（上昇中）：\n\n"
+        result = f"『{'、'.join(query_terms)}』の関連ワードTOP20（過去1時間で上昇中）：\n\n"
         count = 0
         for row in rising.itertuples():
             # 除外語に含まれていなければ表示
             if row.query not in exclude_words:
                 count += 1
                 result += f"{count}. {row.query}（+{row.value}）\n"
-                if count >= 10:
+                if count >= 20:
                     break
 
         if count == 0:
