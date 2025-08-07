@@ -6,7 +6,7 @@ import traceback
 
 # ← ここで読み込み
 from fortune import get_fortune
-from trend import handle_trend_search
+from trend import extract_main_and_sub_related
 
 app = Flask(__name__)
 
@@ -46,7 +46,7 @@ def handle_message(event):
         elif user_state.get(user_id) == "awaiting_keyword":
             print("[ACTION] trend keyword input")
             user_state[user_id] = None
-            result = handle_trend_search(user_id, user_msg)
+            result = extract_main_and_sub_related(user_id, user_msg)
 
         else:
             result = f"あなたが送ったメッセージ：{event.message.text}"
