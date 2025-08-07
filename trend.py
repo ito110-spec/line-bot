@@ -95,7 +95,7 @@ def get_related_keywords(user_input: str) -> str:
 
 
             related_str = ", ".join(sub_words) if sub_words else "なし"
-            results.append(f"{main_word}（+{main_score}）｜急上昇:{related_str}")
+            results.append(f"{main_word}（+{main_score}）｜📈:{related_str}")
 
             time.sleep(random.uniform(2, 5))
 
