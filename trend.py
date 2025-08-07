@@ -8,9 +8,10 @@ from transformers import pipeline
 
 # 感情分析パイプライン初期化（Hugging Face）
 sentiment_pipeline = pipeline(
-    "sentiment-analysis",
+    "text-classification",
     model="kit-nlp/bert-base-japanese-sentiment-irony"
 )
+
 
 
 # pytrends クライアント初期化（日本、東京）
