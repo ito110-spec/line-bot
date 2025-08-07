@@ -2,6 +2,7 @@ from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
+import traceback
 
 # ← ここで読み込み
 from fortune import get_fortune
@@ -28,37 +29,37 @@ user_state = {}
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    user_id = event.source.user_id
-    user_msg = event.message.text.strip().lower()
+    try:
+        user_id = event.source.user_id
+        user_msg = event.message.text.strip().lower()
+        print(f"[RECEIVED] user_id: {user_id}, message: {user_msg}")
 
-    if user_msg in ["今日の占い", "うらない", "占い"]:
-        result = get_fortune(user_id)
+        if user_msg in ["今日の占い", "うらない", "占い"]:
+            print("[ACTION] fortune")
+            result = get_fortune(user_id)
+
+        elif user_msg == "流行検索":
+            print("[ACTION] trend start")
+            user_state[user_id] = "awaiting_keyword"
+            result = "検索したい単語を入力してください（例：新潟、駅）"
+
+        elif user_state.get(user_id) == "awaiting_keyword":
+            print("[ACTION] trend keyword input")
+            user_state[user_id] = None
+            result = handle_trend_search(user_id, user_msg)
+
+        else:
+            result = f"あなたが送ったメッセージ：{event.message.text}"
+
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=result)
         )
 
-    elif user_msg == "流行検索":
-        user_state[user_id] = "awaiting_keyword"
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text="検索したい単語を入力してください（例：新潟、駅）")
-        )
+    except Exception as e:
+        print("[ERROR in handle_message]", e)
+        print(traceback.format_exc())
 
-    elif user_state.get(user_id) == "awaiting_keyword":
-        user_state[user_id] = None  # 状態リセット
-        result = handle_trend_search(user_id, user_msg)
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=result)
-        )
-
-    else:
-        reply_msg = f"あなたが送ったメッセージ：{event.message.text}"
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=reply_msg)
-        )
 
 ######################
 import certifi
