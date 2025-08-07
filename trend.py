@@ -40,22 +40,35 @@ def extract_main_and_sub_related(user_input: str, max_results=10):
         for main_word, main_score in sorted_main[:max_results]:
             sub_words = []
 
-            for full_query, score in original_rows:
-                if main_word in full_query and query in full_query:
-                    # 検索語とメイン関連ワードを除去
-                    cleaned = full_query.replace(query, '').replace(main_word, '').strip()
-                    sub_parts = [w.strip() for w in re.split(r'\s+', cleaned) if w and w != main_word and w != query and len(w) > 1]
+            for main_word, main_score in sorted_main[:max_results]:
+                sub_words = []
+            
+                # 🔊🔉🔈のスコアマークをつける
+                if main_score >= 1000:
+                    score_icon = "🔊"
+                elif main_score >= 100:
+                    score_icon = "🔉"
+                elif main_score >= 10:
+                    score_icon = "🔈"
+                else:
+                    score_icon = ""
+            
+                for full_query, score in original_rows:
+                    if main_word in full_query and query in full_query:
+                        cleaned = re.sub(query, '', full_query)
+                        cleaned = re.sub(main_word, '', cleaned)
+                        sub_parts = [w.strip() for w in cleaned.split() if w.strip() and w != main_word and w != query]
+            
+                        for w in sub_parts:
+                            if w not in sub_words and len(w) > 1:
+                                sub_words.append(w)
+                                if len(sub_words) >= 3:
+                                    break
+            
+                sub_str = "、".join(sub_words) if sub_words else "なし"
+                results.append(f"{main_word}（{score_icon} {main_score}）｜サブ関連:{sub_str}")
+                time.sleep(random.uniform(1, 2))  # レート制限対策
 
-                    for w in sub_parts:
-                        if w not in sub_words:
-                            sub_words.append(w)
-                            if len(sub_words) >= 3:
-                                break
-
-            sub_str = "、".join(sub_words) if sub_words else "なし"
-            results.append(f"{main_word}（+{main_score}%）｜サブ関連:{sub_str}")
-
-            time.sleep(random.uniform(1, 2))  # レート制限対策
 
         return "\n".join(results)
 
