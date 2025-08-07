@@ -3,8 +3,14 @@ import re
 from collections import defaultdict
 import time
 import random
+import urllib.parse
 
 pytrends = TrendReq(hl='ja-JP', tz=540)
+
+def make_news_link(base_query: str, main_word: str, sub_word: str):
+    q = f"{base_query} {main_word} {sub_word}"
+    q_encoded = urllib.parse.quote(q)
+    return f"https://news.google.com/search?q={q_encoded}&hl=ja&gl=JP&ceid=JP:ja"
 
 def extract_main_and_sub_related(user_input: str, max_results=10):
     try:
@@ -51,7 +57,7 @@ def extract_main_and_sub_related(user_input: str, max_results=10):
         results = []
 
         for main_word, main_score in sorted_main[:max_results]:
-            sub_words = []
+            sub_links = []
 
             # 🔴🟠🟡：スコアに応じたアイコン
             if main_score >= 1000:
@@ -70,12 +76,13 @@ def extract_main_and_sub_related(user_input: str, max_results=10):
                     sub_parts = [w.strip() for w in cleaned.split() if w.strip() and w != main_word and w != query]
 
                     for w in sub_parts:
-                        if w not in sub_words and len(w) > 1:
-                            sub_words.append(w)
-                            if len(sub_words) >= 3:
+                        if w not in sub_links and len(w) > 1:
+                            link = make_news_link(query, main_word, w)
+                            sub_links.append(f"[{w}]({link})")
+                            if len(sub_links) >= 3:
                                 break
 
-            sub_str = "、".join(sub_words) if sub_words else "なし"
+            sub_str = "、".join(sub_links) if sub_links else "なし"
             results.append(f"{score_icon}{main_word}(+{main_score}%)\n┗ｻﾌﾞ関連:{sub_str}")
 
             # 結果生成側にも軽めのウェイト
