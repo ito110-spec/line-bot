@@ -74,7 +74,7 @@ def get_related_keywords(user_input: str) -> str:
             if word in exclude_words:
                 continue
 
-            emotion = "＋" if score > 0 else "－"
+            emotion = "+" if score > 0 else "-"
 
             # サブ関連ワード取得（TOP）
             pytrends.build_payload([word], timeframe="now 4-H", geo="JP")
@@ -90,7 +90,7 @@ def get_related_keywords(user_input: str) -> str:
                             break
 
             related_str = ", ".join(sub_words) if sub_words else "なし"
-            results.append(f"{word}（+{score}）｜感情：{emotion}｜関連：{related_str}")
+            results.append(f"{word}（+{score}）｜感情:{emotion}｜関連:{related_str}")
 
             # ランダムスリープ（2〜5秒）
             time.sleep(random.uniform(2, 5))
