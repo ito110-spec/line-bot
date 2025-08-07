@@ -50,9 +50,19 @@ def get_related_keywords(user_input: str) -> str:
             if top_df is not None and not top_df.empty:
                 for row in top_df.itertuples():
                     word = row.query
-                    # 検索語を部分一致で含む語は除外
-                    if not any(q in word for q in query_terms):
-                        combined[word] = row.value
+                    # 検索語を全部除去して残りをcleaned_wordに
+                    cleaned_word = word
+                    for term in query_terms:
+                        cleaned_word = cleaned_word.replace(term, "")
+                    cleaned_word = cleaned_word.strip()
+
+                    # 1文字以下の語は除外
+                    if cleaned_word and len(cleaned_word) > 1:
+                        # すでにある語があればスコアの高い方を残す
+                        if cleaned_word in combined:
+                            combined[cleaned_word] = max(combined[cleaned_word], row.value)
+                        else:
+                            combined[cleaned_word] = row.value
 
         if not combined:
             return "関連ワードが見つかりませんでした。"
