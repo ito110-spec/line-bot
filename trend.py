@@ -4,16 +4,6 @@ from datetime import datetime, timedelta
 from pytrends.request import TrendReq
 import traceback
 
-from transformers import pipeline
-
-# 感情分析パイプライン初期化（Hugging Face）
-sentiment_pipeline = pipeline(
-    "text-classification",
-    model="kit-nlp/bert-base-japanese-sentiment-irony"
-)
-
-
-
 # pytrends クライアント初期化（日本、東京）
 pytrends = TrendReq(hl='ja-JP', tz=540)
 
@@ -44,20 +34,6 @@ def can_use_trend(user_id):
     logs.append(now)
     user_access_log[user_id] = logs
     return True, None
-
-def estimate_emotion_hf(words):
-    try:
-        text = "、".join(words)
-        result = sentiment_pipeline(text)[0]
-        label = result["label"]
-        if label == "ポジティブ":
-            return "＋"
-        elif label == "ネガティブ":
-            return "－"
-        else:
-            return "±"
-    except Exception as e:
-        return "？"  # 分析失敗時
 
 def get_related_keywords(user_input: str) -> str:
     try:
@@ -107,11 +83,8 @@ def get_related_keywords(user_input: str) -> str:
                         if len(sub_words) >= 3:
                             break
 
-            # 感情判定（Hugging Faceを使用）
-            emotion = estimate_emotion_hf([word] + sub_words)
-
             related_str = ", ".join(sub_words) if sub_words else "なし"
-            results.append(f"{word}（+{score}）｜感情:{emotion}｜関連:{related_str}")
+            results.append(f"{word}（+{score}）｜関連:{related_str}")
 
             time.sleep(random.uniform(2, 5))
 
@@ -125,7 +98,6 @@ def get_related_keywords(user_input: str) -> str:
 
     except Exception as e:
         return f"エラーが発生しました：{traceback.format_exc()}"
-
 
 def handle_trend_search(user_id: str, user_input: str) -> str:
     try:
