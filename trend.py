@@ -1,31 +1,19 @@
 import time
 import random
 from datetime import datetime, timedelta
-from collections import Counter
 from pytrends.request import TrendReq
 
 # pytrends クライアント初期化（日本、東京）
 pytrends = TrendReq(hl='ja-JP', tz=540)
 
-# 利用ログ記録
-user_access_log = {}  # {user_id: [datetime1, datetime2, ...]}
-cooldown_users = {}   # {user_id: cooldown_end_datetime}
-
+user_access_log = {}
+cooldown_users = {}
 
 def parse_query(user_input: str):
-    """
-    「、」区切りで複数語AND検索に変換
-    """
     return [t.strip() for t in user_input.split("、") if t.strip()]
 
-
 def can_use_trend(user_id):
-    """
-    利用回数チェック & クールダウン判定
-    """
     now = datetime.now()
-
-    # クールタイム中？
     if user_id in cooldown_users:
         if now < cooldown_users[user_id]:
             remaining = cooldown_users[user_id] - now
@@ -35,7 +23,6 @@ def can_use_trend(user_id):
         else:
             del cooldown_users[user_id]
 
-    # 過去5分のリクエスト履歴を確認
     logs = user_access_log.get(user_id, [])
     logs = [t for t in logs if now - t < timedelta(minutes=5)]
 
@@ -43,88 +30,88 @@ def can_use_trend(user_id):
         cooldown_users[user_id] = now + timedelta(minutes=15)
         return False, "4回使いました！15分間クールタイムです。"
 
-    # 使用可能 → 時間記録を更新
     logs.append(now)
     user_access_log[user_id] = logs
     return True, None
 
 
 def get_related_keywords(user_input: str) -> str:
-    """
-    指定ワードに関連する上昇キーワードを返す（Google Trends）
-    """
     try:
         query_terms = parse_query(user_input)
         if not query_terms:
             return "キーワードが空です。"
 
-        # クエリ送信
-        pytrends.build_payload(query_terms, timeframe="now 1-H", geo="JP")
+        pytrends.build_payload(query_terms, timeframe="now 6-H", geo="JP")
         related = pytrends.related_queries()
 
-        top = related.get(query_terms[0], {}).get("top")  # ここを top に
+        top_df = related.get(query_terms[0], {}).get("top")
+        rising_df = related.get(query_terms[0], {}).get("rising")
 
-        if top is None or top.empty:
+        if top_df is None and rising_df is None:
             return "関連ワードが見つかりませんでした。"
 
-        # 検索語句群を除外対象のセットを作る（単語単体のみ）
+        combined = {}
+
+        if top_df is not None and not top_df.empty:
+            for row in top_df.itertuples():
+                combined[row.query] = row.value
+
+        if rising_df is not None and not rising_df.empty:
+            for row in rising_df.itertuples():
+                # すでにある場合は value を加算（または平均なども可）
+                if row.query in combined:
+                    combined[row.query] += row.value
+                else:
+                    combined[row.query] = row.value
+
         exclude_words = set(query_terms)
+        results = []
 
-        result_lines = []
-        count = 0
-        for row in top.itertuples():
-            # 除外語に含まれていなければ表示
-            if row.query not in exclude_words:
-                count += 1
+        # 降順でスコア順に並べる
+        sorted_items = sorted(combined.items(), key=lambda x: x[1], reverse=True)
 
-                # 感情判定（valueが正なら＋、負なら－）
-                emotion = "＋" if row.value > 0 else "－"
+        for idx, (word, score) in enumerate(sorted_items):
+            if word in exclude_words:
+                continue
 
-                # その関連ワードを再度検索して、上位3関連ワードを取得
-                pytrends.build_payload([row.query], timeframe="now 1-H", geo="JP")
-                sub_related = pytrends.related_queries()
-                sub_rising = sub_related.get(row.query, {}).get("rising")
+            emotion = "＋" if score > 0 else "－"
 
-                related_words = []
-                if sub_rising is not None and not sub_rising.empty:
-                    for sub_row in sub_rising.itertuples():
-                        if sub_row.query not in exclude_words and sub_row.query != row.query:
-                            related_words.append(sub_row.query)
-                            if len(related_words) >= 3:
-                                break
+            # サブ関連ワード取得（TOP）
+            pytrends.build_payload([word], timeframe="now 6-H", geo="JP")
+            sub_related = pytrends.related_queries()
+            sub_top = sub_related.get(word, {}).get("top")
 
-                related_str = ", ".join(related_words) if related_words else "なし"
+            sub_words = []
+            if sub_top is not None and not sub_top.empty:
+                for sub_row in sub_top.itertuples():
+                    if sub_row.query != word and sub_row.query not in exclude_words:
+                        sub_words.append(sub_row.query)
+                        if len(sub_words) >= 3:
+                            break
 
-                # 1行にまとめて追加
-                line = f"{row.query}（+{row.value}）｜感情：{emotion}｜関連：{related_str}"
-                result_lines.append(line)
+            related_str = ", ".join(sub_words) if sub_words else "なし"
+            results.append(f"{word}（+{score}）｜感情：{emotion}｜関連：{related_str}")
 
-                if count >= 10:  # TOP10までに制限
-                    break
+            # ランダムスリープ（2〜5秒）
+            time.sleep(random.uniform(2, 5))
 
-                # サブ関連ワード取得後に1～3秒のランダムスリープ
-                time.sleep(random.uniform(2, 5))
+            if len(results) >= 10:
+                break
 
-        if count == 0:
+        if not results:
             return "関連ワードが見つかりませんでした。"
 
-        header = f"『{'、'.join(query_terms)}』の関連ワードTOP10（過去1時間で上昇中）：\n\n"
-        return header + "\n".join(result_lines)
+        header = f"『{'、'.join(query_terms)}』の関連ワードTOP10（過去6時間）：\n\n"
+        return header + "\n".join(results)
 
     except Exception as e:
         return f"エラーが発生しました：{e}"
 
 
 def handle_trend_search(user_id: str, user_input: str) -> str:
-    """
-    LINE BOT から呼び出す統合関数
-    - クールタイムチェック
-    - ランダムスリープ
-    - トレンド取得
-    """
     can_use, reason = can_use_trend(user_id)
     if not can_use:
         return reason
 
-    time.sleep(random.randint(1, 3))  # レート制限対策
+    time.sleep(random.randint(1, 3))  # 軽めのクールダウン
     return get_related_keywords(user_input)
