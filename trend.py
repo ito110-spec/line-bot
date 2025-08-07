@@ -83,11 +83,13 @@ def get_related_keywords(user_input: str) -> str:
                     for sub_row in rising_df.itertuples():
                         if (
                             sub_row.query != main_word and
-                            not any(q in sub_row.query for q in query_terms)
+                            not any(q in sub_row.query for q in query_terms) and
+                            main_word in sub_row.query  # 👈これがキモ！
                         ):
                             sub_words.append(sub_row.query)
                             if len(sub_words) >= 3:
                                 break
+
             except Exception:
                 sub_words = []
 
