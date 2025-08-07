@@ -41,7 +41,7 @@ def get_related_keywords(user_input: str) -> str:
         if not query_terms:
             return "キーワードが空です。"
 
-        pytrends.build_payload(query_terms, timeframe="now 6-H", geo="JP")
+        pytrends.build_payload(query_terms, timeframe="now 4-H", geo="JP")
         related = pytrends.related_queries()
 
         top_df = related.get(query_terms[0], {}).get("top")
@@ -77,7 +77,7 @@ def get_related_keywords(user_input: str) -> str:
             emotion = "＋" if score > 0 else "－"
 
             # サブ関連ワード取得（TOP）
-            pytrends.build_payload([word], timeframe="now 6-H", geo="JP")
+            pytrends.build_payload([word], timeframe="now 4-H", geo="JP")
             sub_related = pytrends.related_queries()
             sub_top = sub_related.get(word, {}).get("top")
 
