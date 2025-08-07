@@ -9,7 +9,7 @@ pytrends = TrendReq(hl='ja-JP', tz=540)
 def extract_main_and_sub_related(user_input: str, max_results=10):
     try:
         query = user_input.strip()
-        pytrends.build_payload([query], geo='JP', timeframe='now 4-H')
+        pytrends.build_payload([query], geo='JP', timeframe='now 1-d')
         related = pytrends.related_queries()
         df = related.get(query, {}).get('rising')
 
