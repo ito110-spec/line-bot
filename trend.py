@@ -62,9 +62,9 @@ def get_related_keywords(user_input: str) -> str:
         pytrends.build_payload(query_terms, timeframe="now 1-H", geo="JP")
         related = pytrends.related_queries()
 
-        rising = related.get(query_terms[0], {}).get("rising")
+        top = related.get(query_terms[0], {}).get("top")  # ここを top に
 
-        if rising is None or rising.empty:
+        if top is None or top.empty:
             return "関連ワードが見つかりませんでした。"
 
         # 検索語句群を除外対象のセットを作る（単語単体のみ）
@@ -72,7 +72,7 @@ def get_related_keywords(user_input: str) -> str:
 
         result_lines = []
         count = 0
-        for row in rising.itertuples():
+        for row in top.itertuples():
             # 除外語に含まれていなければ表示
             if row.query not in exclude_words:
                 count += 1
