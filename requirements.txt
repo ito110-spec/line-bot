@@ -4,3 +4,5 @@ snscrape>=0.4.5.3
 requests>=2.28.1
 pytrends
 fugashi[unidic-lite]
+transformers
+torch
