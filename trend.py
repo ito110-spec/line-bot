@@ -2,6 +2,12 @@ import time
 import random
 from datetime import datetime, timedelta
 from pytrends.request import TrendReq
+import traceback
+
+from transformers import pipeline
+
+# 感情分析パイプライン初期化（Hugging Face）
+sentiment_pipeline = pipeline("sentiment-analysis", model="daigo/bert-base-japanese-sentiment")
 
 # pytrends クライアント初期化（日本、東京）
 pytrends = TrendReq(hl='ja-JP', tz=540)
@@ -34,6 +40,19 @@ def can_use_trend(user_id):
     user_access_log[user_id] = logs
     return True, None
 
+def estimate_emotion_hf(words):
+    try:
+        text = "、".join(words)
+        result = sentiment_pipeline(text)[0]
+        label = result["label"]
+        if label == "ポジティブ":
+            return "＋"
+        elif label == "ネガティブ":
+            return "－"
+        else:
+            return "±"
+    except Exception as e:
+        return "？"  # 分析失敗時
 
 def get_related_keywords(user_input: str) -> str:
     try:
@@ -51,14 +70,12 @@ def get_related_keywords(user_input: str) -> str:
             return "関連ワードが見つかりませんでした。"
 
         combined = {}
-
         if top_df is not None and not top_df.empty:
             for row in top_df.itertuples():
                 combined[row.query] = row.value
 
         if rising_df is not None and not rising_df.empty:
             for row in rising_df.itertuples():
-                # すでにある場合は value を加算（または平均なども可）
                 if row.query in combined:
                     combined[row.query] += row.value
                 else:
@@ -66,15 +83,11 @@ def get_related_keywords(user_input: str) -> str:
 
         exclude_words = set(query_terms)
         results = []
-
-        # 降順でスコア順に並べる
         sorted_items = sorted(combined.items(), key=lambda x: x[1], reverse=True)
 
         for idx, (word, score) in enumerate(sorted_items):
             if word in exclude_words:
                 continue
-
-            emotion = "+" if score > 0 else "-"
 
             # サブ関連ワード取得（TOP）
             pytrends.build_payload([word], timeframe="now 4-H", geo="JP")
@@ -89,10 +102,12 @@ def get_related_keywords(user_input: str) -> str:
                         if len(sub_words) >= 3:
                             break
 
+            # 感情判定（Hugging Faceを使用）
+            emotion = estimate_emotion_hf([word] + sub_words)
+
             related_str = ", ".join(sub_words) if sub_words else "なし"
             results.append(f"{word}（+{score}）｜感情:{emotion}｜関連:{related_str}")
 
-            # ランダムスリープ（2〜5秒）
             time.sleep(random.uniform(2, 5))
 
             if len(results) >= 10:
@@ -101,15 +116,11 @@ def get_related_keywords(user_input: str) -> str:
         if not results:
             return "関連ワードが見つかりませんでした。"
 
-        # header = f"『{'、'.join(query_terms)}』の関連ワードTOP10（過去4時間）：\n\n"
-        # return header + "\n".join(results)
-        return "\n".join(result_lines)
+        return "\n".join(results)
 
     except Exception as e:
-        return f"エラーが発生しました：{e}"
+        return f"エラーが発生しました：{traceback.format_exc()}"
 
-
-import traceback
 
 def handle_trend_search(user_id: str, user_input: str) -> str:
     try:
@@ -120,9 +131,5 @@ def handle_trend_search(user_id: str, user_input: str) -> str:
         time.sleep(random.randint(1, 3))  # レート制限対策
         return get_related_keywords(user_input)
 
-    except Exception as e:
-        # 例外の詳細なスタックトレースを取得
-        error_details = traceback.format_exc()
-        # ここでログに出すか、LINEに返すなど適宜対応
-        return f"エラーが発生しました:\n{error_details}"
-
+    except Exception:
+        return f"エラーが発生しました：\n{traceback.format_exc()}"
