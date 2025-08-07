@@ -70,21 +70,36 @@ def get_related_keywords(user_input: str) -> str:
             if word in exclude_words:
                 continue
 
-            # サブ関連ワード取得（TOP）
             pytrends.build_payload([word], timeframe="now 4-H", geo="JP")
             sub_related = pytrends.related_queries()
-            sub_top = sub_related.get(word, {}).get("top")
-
-            sub_words = []
-            if sub_top is not None and not sub_top.empty:
-                for sub_row in sub_top.itertuples():
-                    if sub_row.query != word and sub_row.query not in exclude_words:
-                        sub_words.append(sub_row.query)
-                        if len(sub_words) >= 3:
-                            break
-
-            related_str = ", ".join(sub_words) if sub_words else "なし"
+            
+            sub_top_df = sub_related.get(word, {}).get("top")
+            sub_rising_df = sub_related.get(word, {}).get("rising")
+            
+            combined_sub = {}
+            
+            # top の集計
+            if sub_top_df is not None and not sub_top_df.empty:
+                for row in sub_top_df.itertuples():
+                    if row.query != word and row.query not in exclude_words:
+                        combined_sub[row.query] = combined_sub.get(row.query, 0) + row.value
+            
+            # rising の集計
+            if sub_rising_df is not None and not sub_rising_df.empty:
+                for row in sub_rising_df.itertuples():
+                    if row.query != word and row.query not in exclude_words:
+                        combined_sub[row.query] = combined_sub.get(row.query, 0) + row.value
+            
+            # スコア順にソートして上位3件を取得
+            sorted_sub = sorted(combined_sub.items(), key=lambda x: x[1], reverse=True)[:3]
+            
+            if sorted_sub:
+                related_str = ", ".join([item[0] for item in sorted_sub])
+            else:
+                related_str = "なし"
+            
             results.append(f"{word}（+{score}）｜関連:{related_str}")
+
 
             time.sleep(random.uniform(2, 5))
 
