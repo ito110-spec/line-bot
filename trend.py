@@ -108,10 +108,20 @@ def get_related_keywords(user_input: str) -> str:
         return f"エラーが発生しました：{e}"
 
 
-def handle_trend_search(user_id: str, user_input: str) -> str:
-    can_use, reason = can_use_trend(user_id)
-    if not can_use:
-        return reason
+import traceback
 
-    time.sleep(random.randint(1, 3))  # 軽めのクールダウン
-    return get_related_keywords(user_input)
+def handle_trend_search(user_id: str, user_input: str) -> str:
+    try:
+        can_use, reason = can_use_trend(user_id)
+        if not can_use:
+            return reason
+
+        time.sleep(random.randint(1, 3))  # レート制限対策
+        return get_related_keywords(user_input)
+
+    except Exception as e:
+        # 例外の詳細なスタックトレースを取得
+        error_details = traceback.format_exc()
+        # ここでログに出すか、LINEに返すなど適宜対応
+        return f"エラーが発生しました:\n{error_details}"
+
