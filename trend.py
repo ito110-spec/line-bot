@@ -9,7 +9,7 @@ from transformers import pipeline
 # 感情分析パイプライン初期化（Hugging Face）
 sentiment_pipeline = pipeline(
     "sentiment-analysis",
-    model="Mizuiro-sakura/luke-japanese-large-sentiment-analysis-wrime"
+    model="kit-nlp/bert-base-japanese-sentiment-irony"
 )
 
 
