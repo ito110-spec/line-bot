@@ -73,9 +73,10 @@ def get_related_keywords(user_input: str) -> str:
         for idx, (main_word, main_score) in enumerate(sorted_main):
             try:
                 # メイン関連＋検索語でrising取得（AND検索）
-                pytrends.build_payload([main_word] + query_terms, timeframe="now 4-H", geo="JP")
+                and_query = " ".join(query_terms + [main_word])
+                pytrends.build_payload([and_query], timeframe="now 4-H", geo="JP")
                 sub_related = pytrends.related_queries()
-                rising_df = sub_related.get(main_word, {}).get("rising")
+                rising_df = sub_related.get(and_query, {}).get("rising")
         
                 sub_words = []
                 if rising_df is not None and not rising_df.empty:
