@@ -9,8 +9,9 @@ from transformers import pipeline
 # 感情分析パイプライン初期化（Hugging Face）
 sentiment_pipeline = pipeline(
     "sentiment-analysis",
-    model="nlp-waseda/roberta-base-japanese-sentiment"
+    model="Hironsan/distilbert-base-japanese"
 )
+
 
 # pytrends クライアント初期化（日本、東京）
 pytrends = TrendReq(hl='ja-JP', tz=540)
