@@ -101,8 +101,9 @@ def get_related_keywords(user_input: str) -> str:
         if not results:
             return "関連ワードが見つかりませんでした。"
 
-        header = f"『{'、'.join(query_terms)}』の関連ワードTOP10（過去6時間）：\n\n"
-        return header + "\n".join(results)
+        # header = f"『{'、'.join(query_terms)}』の関連ワードTOP10（過去4時間）：\n\n"
+        # return header + "\n".join(results)
+        return "\n".join(result_lines)
 
     except Exception as e:
         return f"エラーが発生しました：{e}"
