@@ -67,28 +67,49 @@ def get_related_keywords(user_input: str) -> str:
         if rising is None or rising.empty:
             return "関連ワードが見つかりませんでした。"
 
-        # 検索語句群をすべて結合して除外対象のセットを作る
+        # 検索語句群を除外対象のセットを作る（単語単体のみ）
         exclude_words = set(query_terms)
-        exclude_words.add(" ".join(query_terms))  # 例えば「渋谷 横丁」
 
-        result = f"『{'、'.join(query_terms)}』の関連ワードTOP20（過去1時間で上昇中）：\n\n"
+        result_lines = []
         count = 0
         for row in rising.itertuples():
             # 除外語に含まれていなければ表示
             if row.query not in exclude_words:
                 count += 1
-                result += f"{count}. {row.query}（+{row.value}）\n"
+
+                # 感情判定（valueが正なら＋、負なら－）
+                emotion = "＋" if row.value > 0 else "－"
+
+                # その関連ワードを再度検索して、上位3関連ワードを取得
+                pytrends.build_payload([row.query], timeframe="now 1-H", geo="JP")
+                sub_related = pytrends.related_queries()
+                sub_rising = sub_related.get(row.query, {}).get("rising")
+
+                related_words = []
+                if sub_rising is not None and not sub_rising.empty:
+                    for sub_row in sub_rising.itertuples():
+                        if sub_row.query not in exclude_words and sub_row.query != row.query:
+                            related_words.append(sub_row.query)
+                            if len(related_words) >= 3:
+                                break
+
+                related_str = ", ".join(related_words) if related_words else "なし"
+
+                # 1行にまとめて追加
+                line = f"{row.query}（+{row.value}）｜感情：{emotion}｜関連：{related_str}"
+                result_lines.append(line)
+
                 if count >= 20:
                     break
 
         if count == 0:
             return "関連ワードが見つかりませんでした。"
 
-        return result
+        header = f"『{'、'.join(query_terms)}』の関連ワードTOP20（過去1時間で上昇中）：\n\n"
+        return header + "\n".join(result_lines)
 
     except Exception as e:
         return f"エラーが発生しました：{e}"
-
 
 
 def handle_trend_search(user_id: str, user_input: str) -> str:
