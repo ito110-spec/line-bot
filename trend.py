@@ -8,6 +8,8 @@ def extract_main_and_sub_related(user_input: str, max_results=10):
     try:
         query = user_input.strip()
         time.sleep(random.uniform(6, 10))  # 強制ウェイト
+        
+        pytrends = TrendReq(hl='ja-JP', tz=540)
 
         pytrends.build_payload([query], geo='JP', timeframe='now 1-d')
 
