@@ -99,13 +99,16 @@ def get_related_keywords(user_input: str) -> str:
                 line = f"{row.query}（+{row.value}）｜感情：{emotion}｜関連：{related_str}"
                 result_lines.append(line)
 
-                if count >= 20:
+                if count >= 10:  # TOP10までに制限
                     break
+
+                # サブ関連ワード取得後に1～3秒のランダムスリープ
+                time.sleep(random.uniform(2, 5))
 
         if count == 0:
             return "関連ワードが見つかりませんでした。"
 
-        header = f"『{'、'.join(query_terms)}』の関連ワードTOP20（過去1時間で上昇中）：\n\n"
+        header = f"『{'、'.join(query_terms)}』の関連ワードTOP10（過去1時間で上昇中）：\n\n"
         return header + "\n".join(result_lines)
 
     except Exception as e:
@@ -123,5 +126,5 @@ def handle_trend_search(user_id: str, user_input: str) -> str:
     if not can_use:
         return reason
 
-    time.sleep(random.randint(30, 40))  # レート制限対策
+    time.sleep(random.randint(1, 3))  # レート制限対策
     return get_related_keywords(user_input)
