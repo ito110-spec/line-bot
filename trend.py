@@ -1,3 +1,9 @@
+from pytrends.request import TrendReq
+import re
+from collections import defaultdict
+import time
+import random
+
 def extract_main_and_sub_related(user_input: str, max_results=10):
     try:
         query = user_input.strip()
