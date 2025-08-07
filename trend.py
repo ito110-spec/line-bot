@@ -69,7 +69,7 @@ def extract_main_and_sub_related(user_input: str, max_results=10):
 #                                     break
             
 #                 sub_str = "、".join(sub_words) if sub_words else "なし"
-#                 results.append(f"{score_icon}{main_word}({main_score})\n┗ｻﾌﾞ関連:{sub_str}")
+#                 results.append(f"{score_icon}{main_word}(+{main_score}%)\n┗ｻﾌﾞ関連:{sub_str}")
 #                 time.sleep(random.uniform(1, 3))  # レート制限対策
 
 
