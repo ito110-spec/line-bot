@@ -44,70 +44,48 @@ def get_related_keywords(user_input: str) -> str:
         pytrends.build_payload(query_terms, timeframe="now 4-H", geo="JP")
         related = pytrends.related_queries()
 
-        top_df = related.get(query_terms[0], {}).get("top")
-        rising_df = related.get(query_terms[0], {}).get("rising")
+        combined = {}
+        for q in query_terms:
+            top_df = related.get(q, {}).get("top")
+            if top_df is not None and not top_df.empty:
+                for row in top_df.itertuples():
+                    word = row.query
+                    # 検索語を部分一致で含む語は除外
+                    if not any(q in word for q in query_terms):
+                        combined[word] = row.value
 
-        if top_df is None and rising_df is None:
+        if not combined:
             return "関連ワードが見つかりませんでした。"
 
-        combined = {}
-        if top_df is not None and not top_df.empty:
-            for row in top_df.itertuples():
-                combined[row.query] = row.value
-
-        if rising_df is not None and not rising_df.empty:
-            for row in rising_df.itertuples():
-                if row.query in combined:
-                    combined[row.query] += row.value
-                else:
-                    combined[row.query] = row.value
-
-        exclude_words = set(query_terms)
+        sorted_main = sorted(combined.items(), key=lambda x: x[1], reverse=True)
         results = []
-        sorted_items = sorted(combined.items(), key=lambda x: x[1], reverse=True)
 
-        for idx, (word, score) in enumerate(sorted_items):
-            if word in exclude_words:
-                continue
+        for idx, (main_word, main_score) in enumerate(sorted_main):
+            try:
+                pytrends.build_payload([main_word], timeframe="now 4-H", geo="JP")
+                sub_related = pytrends.related_queries()
+                rising_df = sub_related.get(main_word, {}).get("rising")
 
-            pytrends.build_payload([word], timeframe="now 4-H", geo="JP")
-            sub_related = pytrends.related_queries()
-            
-            sub_top_df = sub_related.get(word, {}).get("top")
-            sub_rising_df = sub_related.get(word, {}).get("rising")
-            
-            combined_sub = {}
-            
-            # top の集計
-            if sub_top_df is not None and not sub_top_df.empty:
-                for row in sub_top_df.itertuples():
-                    if row.query != word and row.query not in exclude_words:
-                        combined_sub[row.query] = combined_sub.get(row.query, 0) + row.value
-            
-            # rising の集計
-            if sub_rising_df is not None and not sub_rising_df.empty:
-                for row in sub_rising_df.itertuples():
-                    if row.query != word and row.query not in exclude_words:
-                        combined_sub[row.query] = combined_sub.get(row.query, 0) + row.value
-            
-            # スコア順にソートして上位3件を取得
-            sorted_sub = sorted(combined_sub.items(), key=lambda x: x[1], reverse=True)[:3]
-            
-            if sorted_sub:
-                related_str = ", ".join([item[0] for item in sorted_sub])
-            else:
-                related_str = "なし"
-            
-            results.append(f"{word}（+{score}）｜関連:{related_str}")
+                sub_words = []
+                if rising_df is not None and not rising_df.empty:
+                    for sub_row in rising_df.itertuples():
+                        if (
+                            sub_row.query != main_word and
+                            not any(q in sub_row.query for q in query_terms)
+                        ):
+                            sub_words.append(sub_row.query)
+                            if len(sub_words) >= 3:
+                                break
+            except Exception:
+                sub_words = []
 
+            related_str = ", ".join(sub_words) if sub_words else "なし"
+            results.append(f"{main_word}（+{main_score}）｜急上昇:{related_str}")
 
             time.sleep(random.uniform(2, 5))
 
             if len(results) >= 10:
                 break
-
-        if not results:
-            return "関連ワードが見つかりませんでした。"
 
         return "\n".join(results)
 
