@@ -13,6 +13,8 @@ def extract_main_and_sub_related(user_input: str, max_results=10):
         related = pytrends.related_queries()
         df = related.get(query, {}).get('rising')
 
+        print("related_queries result:", related)
+
         if df is None or df.empty:
             return "関連キーワードが見つかりませんでした。"
 
