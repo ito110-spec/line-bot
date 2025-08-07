@@ -7,7 +7,7 @@ import random
 pytrends = TrendReq(hl='ja-JP', tz=540)
 
 def extract_main_and_sub_related(user_input: str, max_results=10):
-    return "東京|🔴+1234%|ｻﾌﾞ関連: 旅行、観光、グルメ\n🔉渋谷|🟠+234%|ｻﾌﾞ関連: 原宿、109、カフェ"
+    return "🔴東京(+1234%)\n┗ｻﾌﾞ関連: 旅行、観光、グルメ\n🟠渋谷(+234%)|\n┗ｻﾌﾞ関連: 原宿、109、カフェ"
 
 # def extract_main_and_sub_related(user_input: str, max_results=10):
 #     try:
@@ -69,7 +69,7 @@ def extract_main_and_sub_related(user_input: str, max_results=10):
 #                                     break
             
 #                 sub_str = "、".join(sub_words) if sub_words else "なし"
-#                 results.append(f"{main_word}|{score_icon}{main_score}|ｻﾌﾞ関連:{sub_str}")
+#                 results.append(f"{score_icon}{main_word}({main_score})\n┗ｻﾌﾞ関連:{sub_str}")
 #                 time.sleep(random.uniform(1, 3))  # レート制限対策
 
 
