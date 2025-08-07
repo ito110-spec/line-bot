@@ -45,11 +45,11 @@ def extract_main_and_sub_related(user_input: str, max_results=10):
             
                 # 🔊🔉🔈のスコアマークをつける
                 if main_score >= 1000:
-                    score_icon = "🔊"
+                    score_icon = "🔴"
                 elif main_score >= 100:
-                    score_icon = "🔉"
+                    score_icon = "🟠"
                 elif main_score >= 10:
-                    score_icon = "🔈"
+                    score_icon = "🟡"
                 else:
                     score_icon = ""
             
@@ -66,8 +66,8 @@ def extract_main_and_sub_related(user_input: str, max_results=10):
                                     break
             
                 sub_str = "、".join(sub_words) if sub_words else "なし"
-                results.append(f"{main_word}（{score_icon} {main_score}）｜ｻﾌﾞ関連:{sub_str}")
-                time.sleep(random.uniform(1, 2))  # レート制限対策
+                results.append(f"{main_word}（{score_icon}）｜ｻﾌﾞ関連:{sub_str}")
+                time.sleep(random.uniform(1, 3))  # レート制限対策
 
 
         return "\n".join(results)
