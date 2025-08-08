@@ -29,6 +29,7 @@ quotes = [
     "心を燃やせ！"
 ]
 
+
 def pick_from_list(user_id, today_str, data_list, tag):
     key = f"{user_id}_{today_str}_{tag}"
     hash_value = hashlib.sha256(key.encode()).hexdigest()
