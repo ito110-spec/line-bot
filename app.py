@@ -1,8 +1,6 @@
 from flask import Flask, request, abort
-from linebot.v3.messaging import MessagingApi, Configuration
-from linebot.v3.webhook import WebhookHandler
-from linebot.v3.webhooks import MessageEvent, TextMessageContent
-#from linebot.v3.models import TextMessage
+from linebot import LineBotApi, WebhookHandler
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import os
 import traceback
 
@@ -13,8 +11,7 @@ from anime_search import handle_anime_search  # アニメ検索モジュール
 app = Flask(__name__)
 
 # LINE Bot API初期化
-config = Configuration(access_token=os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
-line_bot_api = MessagingApi(configuration=config)
+line_bot_api = LineBotApi(os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
 handler = WebhookHandler(os.environ.get("LINE_CHANNEL_SECRET"))
 
 # ユーザーごとの状態管理用辞書
