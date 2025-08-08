@@ -6,22 +6,19 @@ from linebot.v3.models import TextMessage
 import os
 import traceback
 
-# 自作モジュール
 from fortune import get_fortune
 from trend import extract_main_and_sub_related
+from anime_search import handle_anime_search  # 追加
 
-# Flask アプリ初期化
 app = Flask(__name__)
 
-# LINE Bot 初期化（v3）
 config = Configuration(access_token=os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
 line_bot_api = MessagingApi(configuration=config)
 handler = WebhookHandler(os.environ.get("LINE_CHANNEL_SECRET"))
 
-# ユーザー状態を保持する辞書
 user_state = {}
+anime_search_states = {}
 
-# Webhookエンドポイント
 @app.route("/callback", methods=["POST"])
 def callback():
     signature = request.headers.get("X-Line-Signature")
@@ -35,7 +32,6 @@ def callback():
 
     return "OK"
 
-# メッセージ受信時の処理
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     try:
@@ -57,6 +53,15 @@ def handle_message(event):
             user_state[user_id] = None
             result = extract_main_and_sub_related(user_msg)
 
+        # ここからアニメ検索機能
+        elif user_msg == "アニメ検索":
+            user_state[user_id] = "anime_search_waiting_for_title"
+            anime_search_states[user_id] = {"titles": []}
+            result = "好きなアニメを教えてください。複数入れてもOK。タイトルか「検索」と入力してください。"
+
+        elif user_state.get(user_id) == "anime_search_waiting_for_title":
+            result = handle_anime_search(user_id, user_msg, anime_search_states)
+
         else:
             result = f"あなたが送ったメッセージ：{event.message.text}"
 
@@ -69,11 +74,9 @@ def handle_message(event):
         print("[ERROR in handle_message]", e)
         print(traceback.format_exc())
 
-# SSLの証明書パス確認（Render向け）
 import certifi
 print("certifi cacert.pem path:", certifi.where())
 print("SSL_CERT_FILE env:", os.environ.get("SSL_CERT_FILE"))
 
-# Flask 実行
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
