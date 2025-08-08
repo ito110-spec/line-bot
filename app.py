@@ -2,6 +2,7 @@ from flask import Flask, request, abort
 from linebot.v3.messaging import MessagingApi, Configuration
 from linebot.v3.webhook import WebhookHandler
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
+from linebot.v3.messaging import TextMessage, ReplyMessageRequest
 import os
 import traceback
 
@@ -43,37 +44,34 @@ def handle_message(event):
             print("[ACTION] fortune")
             result = get_fortune(user_id)
 
-        # 流行検索開始コマンド
         elif user_msg == "流行検索":
             print("[ACTION] trend start")
             user_state[user_id] = "awaiting_keyword"
             result = "検索したい単語を入力してください（例：新潟、駅）"
 
-        # 流行検索のキーワード入力受付中
         elif user_state.get(user_id) == "awaiting_keyword":
             print("[ACTION] trend keyword input")
             user_state[user_id] = None
             result = extract_main_and_sub_related(user_msg)
 
-        # アニメ検索開始
         elif user_msg == "アニメ検索":
             print("[ACTION] anime search start")
             user_state[user_id] = "anime_search_waiting_for_title"
             anime_search_states[user_id] = {"titles": []}
             result = "好きなアニメを教えてください。複数入れてもOK。タイトルか「検索」と入力してください。"
 
-        # アニメ検索のタイトル入力待ち
         elif user_state.get(user_id) == "anime_search_waiting_for_title":
             result = handle_anime_search(user_id, user_msg, anime_search_states)
 
         else:
-            # その他のメッセージはそのまま返す
             result = f"あなたが送ったメッセージ：{event.message.text}"
 
-        # 返信送信 ※v3はdict形式で送る
+        # ✅ 正しい返信方法（v3）
         line_bot_api.reply_message(
-            event.reply_token,
-            messages=[{"type": "text", "text": result}]
+            ReplyMessageRequest(
+                reply_token=event.reply_token,
+                messages=[TextMessage(text=result)]
+            )
         )
 
     except Exception as e:
