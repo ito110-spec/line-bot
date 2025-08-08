@@ -1,6 +1,7 @@
 from flask import Flask, request, abort
-from linebot import LineBotApi, WebhookHandler
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.v3.messaging import MessagingApi, Configuration
+from linebot.v3.webhook import WebhookHandler
+from linebot.v3.webhooks import MessageEvent, TextMessageContent
 import os
 import traceback
 
@@ -10,8 +11,9 @@ from anime_search import handle_anime_search  # アニメ検索モジュール
 
 app = Flask(__name__)
 
-# LINE Bot API初期化
-line_bot_api = LineBotApi(os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
+# LINE Bot API初期化（v3 SDK）
+config = Configuration(access_token=os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
+line_bot_api = MessagingApi(configuration=config)
 handler = WebhookHandler(os.environ.get("LINE_CHANNEL_SECRET"))
 
 # ユーザーごとの状態管理用辞書
@@ -68,10 +70,10 @@ def handle_message(event):
             # その他のメッセージはそのまま返す
             result = f"あなたが送ったメッセージ：{event.message.text}"
 
-        # 返信送信
+        # 返信送信 ※v3はdict形式で送る
         line_bot_api.reply_message(
-        event.reply_token,
-        messages=[{"type": "text", "text": result}]
+            event.reply_token,
+            messages=[{"type": "text", "text": result}]
         )
 
     except Exception as e:
