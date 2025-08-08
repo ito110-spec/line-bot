@@ -2,7 +2,7 @@ from flask import Flask, request, abort
 from linebot.v3.messaging import MessagingApi, Configuration
 from linebot.v3.webhook import WebhookHandler
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
-from linebot.v3.models import TextMessage
+#from linebot.v3.models import TextMessage
 import os
 import traceback
 
@@ -73,8 +73,8 @@ def handle_message(event):
 
         # 返信送信
         line_bot_api.reply_message(
-            event.reply_token,
-            messages=[TextMessage(text=result)]
+        event.reply_token,
+        messages=[{"type": "text", "text": result}]
         )
 
     except Exception as e:
