@@ -3,13 +3,17 @@ from janome.tokenizer import Tokenizer
 import os
 
 HUGGINGFACE_API_TOKEN = os.getenv("HF_API_TOKEN")
-API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct"
+API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-rw-1b"  # 軽量モデル
 
 headers = {
     "Authorization": f"Bearer {HUGGINGFACE_API_TOKEN}"
 }
 
 def query_huggingface(prompt):
+
+    #テスト用
+    print(f"DEBUG TOKEN: {HUGGINGFACE_API_TOKEN}")
+    
     payload = {
         "inputs": prompt,
         "parameters": {"max_new_tokens": 300}
