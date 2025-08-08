@@ -1,32 +1,31 @@
-import requests
+from groq import Groq
 from janome.tokenizer import Tokenizer
 import os
 
-HUGGINGFACE_API_TOKEN = os.getenv("HF_API_TOKEN")
-API_URL = "rinna/japanese-gpt-neox-3.6b"  
+# Groq API キーを環境変数から取得
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-headers = {
-    "Authorization": f"Bearer {HUGGINGFACE_API_TOKEN}"
-}
+# Groq クライアント初期化
+client = Groq(api_key=GROQ_API_KEY)
 
-def query_huggingface(prompt):
+# モデル指定（例：llama3-8b-8192）
+GROQ_MODEL = "mixtral-8x7b-32768"
 
-    #テスト用
-    print(f"DEBUG TOKEN: {HUGGINGFACE_API_TOKEN}")
-    
-    payload = {
-        "inputs": prompt,
-        "parameters": {"max_new_tokens": 300}
-    }
-    response = requests.post(API_URL, headers=headers, json=payload)
-    print(f"Status code: {response.status_code}")
-    print(f"Response text: {response.text}")
-    if response.status_code == 200:
-        data = response.json()
-        return data[0]["generated_text"] if isinstance(data, list) else data.get("generated_text", "")
-    else:
+def query_groq(prompt):
+    try:
+        response = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": "あなたはアニメのストーリー要素に詳しいAIです。"},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Groq API エラー: {e}")
         return None
-
 
 def extract_keywords(text):
     tokenizer = Tokenizer()
@@ -36,7 +35,6 @@ def extract_keywords(text):
         part = token.part_of_speech.split(',')[0]
         if part in ["名詞", "形容詞"]:
             keywords.append(token.base_form)
-    # 重複除去して返す
     return list(set(keywords))
 
 def handle_anime_search(user_id, user_msg, anime_search_states):
@@ -51,7 +49,6 @@ def handle_anime_search(user_id, user_msg, anime_search_states):
         if not titles:
             return "まだアニメタイトルが入力されていません。好きなアニメを教えてください。"
 
-        # プロンプト作成
         prompt = (
             f"以下のアニメタイトルについて、それぞれのストーリーの特徴を4つのカテゴリで2つずつ挙げてください。\n"
             f"カテゴリ: 感情要素, ストーリー展開要素, 登場キャラ内面/心理要素, 世界観要素\n"
@@ -59,13 +56,12 @@ def handle_anime_search(user_id, user_msg, anime_search_states):
             "回答はカテゴリごとに箇条書きで簡潔に。"
         )
 
-        result = query_huggingface(prompt)
+        result = query_groq(prompt)
         if not result:
             return "おすすめを取得中にエラーが発生しました。もう一度やり直してください。"
 
         keywords = extract_keywords(result)
 
-        # 状態リセット
         anime_search_states[user_id] = {"titles": []}
 
         return f"おすすめ生成結果:\n{result}\n\n抽出タグ:\n{', '.join(keywords)}\n"
