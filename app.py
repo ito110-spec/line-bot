@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 # LINE Bot API初期化（v3 SDK）
 config = Configuration(access_token=os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
-line_bot_api = MessagingApi(configuration=config)
+line_bot_api = MessagingApi(config)
 handler = WebhookHandler(os.environ.get("LINE_CHANNEL_SECRET"))
 
 # ユーザーごとの状態管理用辞書
