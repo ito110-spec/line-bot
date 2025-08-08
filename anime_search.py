@@ -1,29 +1,44 @@
-# anime_search.py
+import requests
+from collections import defaultdict
 
-user_title_buffer = {}  # user_id → タイトルのリスト
+# ユーザーごとにアニメタイトルを保持する辞書
+user_anime_keywords = defaultdict(list)
 
-def start_anime_search(user_id):
-    """検索モードに入ったとき呼ばれる"""
-    user_title_buffer[user_id] = []
-    return "好きなアニメタイトルか「検索」と入力してください"
+def reset_user_keywords(user_id):
+    user_anime_keywords[user_id] = []
 
-def handle_anime_input(user_id, user_input):
-    """ユーザーがタイトル or 検索と入力したとき"""
-    if user_id not in user_title_buffer:
-        return "まず「アニメ検索」と入力してください"
+def add_anime_keyword(user_id, keyword):
+    user_anime_keywords[user_id].append(keyword)
 
-    if user_input.strip() == "検索":
-        titles = user_title_buffer.get(user_id, [])
-        if not titles:
-            return "アニメタイトルが一つも入力されていません。"
-        del user_title_buffer[user_id]
-        return search_recommendations(titles)
+def fetch_recommendations(anime_titles):
+    # 今回はAPI連携が未実装のため、ダミーのレコメンドを返す
+    # 実際には AniList API を使用する
+    dummy_db = {
+        "ガンダム": ["コードギアス", "マクロス", "エウレカセブン"],
+        "転スラ": ["このすば", "オーバーロード", "リゼロ"],
+    }
 
-    user_title_buffer[user_id].append(user_input.strip())
-    return "好きなアニメタイトルか「検索」と入力してください"
+    result_set = set()
+    for title in anime_titles:
+        result_set.update(dummy_db.get(title, []))
 
-def search_recommendations(titles):
-    """おすすめアニメを返す（仮のロジック）"""
-    # ここにAniList APIを使った処理をあとで入れる
-    titles_str = "、".join(titles)
-    return f"おすすめを探しています（今は仮機能）\nあなたの好きなアニメ: {titles_str}"
+    if not result_set:
+        return "おすすめのアニメが見つかりませんでした。"
+
+    return "おすすめアニメ:\n- " + "\n- ".join(result_set)
+
+def handle_anime_search(user_id, user_input):
+    user_input = user_input.strip()
+
+    if user_input == "検索":
+        anime_titles = user_anime_keywords[user_id]
+        reset_user_keywords(user_id)
+
+        if not anime_titles:
+            return "アニメタイトルが登録されていません。最初にタイトルを教えてください。"
+
+        return fetch_recommendations(anime_titles)
+
+    else:
+        add_anime_keyword(user_id, user_input)
+        return f"「{user_input}」を記録しました。続けて入力するか「検索」と送ってください。"
