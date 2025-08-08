@@ -1,44 +1,33 @@
-import requests
-from collections import defaultdict
+# anime_search.py
 
-# ユーザーごとにアニメタイトルを保持する辞書
-user_anime_keywords = defaultdict(list)
+# ユーザーID別にタイトルを貯めて「検索」が来るまで待つ形を想定
 
-def reset_user_keywords(user_id):
-    user_anime_keywords[user_id] = []
+def handle_anime_search(user_id, user_msg, anime_search_states):
+    # user_msg はすでに小文字に変換されている想定
 
-def add_anime_keyword(user_id, keyword):
-    user_anime_keywords[user_id].append(keyword)
+    state = anime_search_states.get(user_id)
+    if state is None:
+        # 状態がない場合は初期化（念のため）
+        anime_search_states[user_id] = {"titles": []}
+        state = anime_search_states[user_id]
 
-def fetch_recommendations(anime_titles):
-    # 今回はAPI連携が未実装のため、ダミーのレコメンドを返す
-    # 実際には AniList API を使用する
-    dummy_db = {
-        "ガンダム": ["コードギアス", "マクロス", "エウレカセブン"],
-        "転スラ": ["このすば", "オーバーロード", "リゼロ"],
-    }
+    if user_msg == "検索":
+        titles = state.get("titles", [])
+        if not titles:
+            return "まだアニメタイトルが入力されていません。好きなアニメを教えてください。"
 
-    result_set = set()
-    for title in anime_titles:
-        result_set.update(dummy_db.get(title, []))
+        # ここでタイトルに基づくおすすめロジックを入れる（今は仮で返す）
+        # 例: 「転スラ」とかにマッチしたおすすめリストを返すなど
 
-    if not result_set:
-        return "おすすめのアニメが見つかりませんでした。"
+        recommended = f"あなたが入力したタイトル: {', '.join(titles)}\nおすすめアニメは後で実装します！"
 
-    return "おすすめアニメ:\n- " + "\n- ".join(result_set)
-
-def handle_anime_search(user_id, user_input):
-    user_input = user_input.strip()
-
-    if user_input == "検索":
-        anime_titles = user_anime_keywords[user_id]
-        reset_user_keywords(user_id)
-
-        if not anime_titles:
-            return "アニメタイトルが登録されていません。最初にタイトルを教えてください。"
-
-        return fetch_recommendations(anime_titles)
+        # 状態リセット
+        anime_search_states[user_id] = {"titles": []}
+        return recommended
 
     else:
-        add_anime_keyword(user_id, user_input)
-        return f"「{user_input}」を記録しました。続けて入力するか「検索」と送ってください。"
+        # 「検索」以外はタイトルとして追加
+        titles = state.get("titles", [])
+        titles.append(user_msg)
+        state["titles"] = titles
+        return f"タイトル「{user_msg}」を登録しました。ほかのタイトルか「検索」と入力してください。"
