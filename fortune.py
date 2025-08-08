@@ -26,6 +26,7 @@ quotes = [
     "小さな努力が未来を変える。",
     "他人の評価より、自分の気持ちを大切に。",
     "今あるものに感謝しよう。"
+    "心を燃やせ！"
 ]
 
 def pick_from_list(user_id, today_str, data_list, tag):
