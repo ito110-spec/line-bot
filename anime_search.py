@@ -15,12 +15,14 @@ def query_huggingface(prompt):
         "parameters": {"max_new_tokens": 300}
     }
     response = requests.post(API_URL, headers=headers, json=payload)
+    print(f"Status code: {response.status_code}")
+    print(f"Response text: {response.text}")
     if response.status_code == 200:
         data = response.json()
-        # モデルによっては応答の構造が違う場合もあるので調整してね
         return data[0]["generated_text"] if isinstance(data, list) else data.get("generated_text", "")
     else:
         return None
+
 
 def extract_keywords(text):
     tokenizer = Tokenizer()
