@@ -9,7 +9,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
 # モデル指定（例：llama3-8b-8192）
-GROQ_MODEL = "mixtral-8x7b-32768"
+GROQ_MODEL = "llama3-8b-8192"
 
 def query_groq(prompt):
     try:
