@@ -1,7 +1,8 @@
 import requests
 from janome.tokenizer import Tokenizer
+import os
 
-HUGGINGFACE_API_TOKEN = "hf_xxx"  # 取得したトークン
+HUGGINGFACE_API_TOKEN = os.getenv("HF_API_TOKEN")
 API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct"
 
 headers = {
