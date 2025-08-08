@@ -1,33 +1,42 @@
 from flask import Flask, request, abort
-from linebot import LineBotApi, WebhookHandler
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.v3.messaging import MessagingApi, Configuration
+from linebot.v3.webhook import WebhookHandler
+from linebot.v3.webhooks import MessageEvent, TextMessageContent
+from linebot.v3.models import TextMessage
 import os
 import traceback
 
-# ← ここで読み込み
+# 自作モジュール
 from fortune import get_fortune
 from trend import extract_main_and_sub_related
 
+# Flask アプリ初期化
 app = Flask(__name__)
 
-line_bot_api = LineBotApi(os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
+# LINE Bot 初期化（v3）
+config = Configuration(access_token=os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
+line_bot_api = MessagingApi(configuration=config)
 handler = WebhookHandler(os.environ.get("LINE_CHANNEL_SECRET"))
 
+# ユーザー状態を保持する辞書
+user_state = {}
+
+# Webhookエンドポイント
 @app.route("/callback", methods=["POST"])
 def callback():
-    signature = request.headers["X-Line-Signature"]
+    signature = request.headers.get("X-Line-Signature")
     body = request.get_data(as_text=True)
 
     try:
         handler.handle(body, signature)
-    except:
+    except Exception as e:
+        print("[Webhook Error]", e)
         abort(400)
 
     return "OK"
 
-user_state = {}
-
-@handler.add(MessageEvent, message=TextMessage)
+# メッセージ受信時の処理
+@handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     try:
         user_id = event.source.user_id
@@ -46,28 +55,25 @@ def handle_message(event):
         elif user_state.get(user_id) == "awaiting_keyword":
             print("[ACTION] trend keyword input")
             user_state[user_id] = None
-            result = extract_main_and_sub_related(user_id, user_msg)
+            result = extract_main_and_sub_related(user_msg)
 
         else:
             result = f"あなたが送ったメッセージ：{event.message.text}"
 
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text=result)
+            messages=[TextMessage(text=result)]
         )
 
     except Exception as e:
         print("[ERROR in handle_message]", e)
         print(traceback.format_exc())
 
-
-######################
+# SSLの証明書パス確認（Render向け）
 import certifi
-import os
-
 print("certifi cacert.pem path:", certifi.where())
 print("SSL_CERT_FILE env:", os.environ.get("SSL_CERT_FILE"))
-######################
 
+# Flask 実行
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
