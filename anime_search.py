@@ -3,7 +3,7 @@ from janome.tokenizer import Tokenizer
 import os
 
 HUGGINGFACE_API_TOKEN = os.getenv("HF_API_TOKEN")
-API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-rw-1b"  # 軽量モデル
+API_URL = "rinna/japanese-gpt-neox-3.6b"  
 
 headers = {
     "Authorization": f"Bearer {HUGGINGFACE_API_TOKEN}"
