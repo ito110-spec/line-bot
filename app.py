@@ -1,8 +1,8 @@
 from flask import Flask, request, abort
-from linebot.v3.messaging import Configuration, ReplyMessageRequest, TextMessage
-from linebot.v3.messaging import MessagingApi, ApiClient
+from linebot.v3.messaging import MessagingApi, Configuration, TextMessage, ReplyMessageRequest
 from linebot.v3.webhook import WebhookHandler
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
+from linebot.v3.messaging import ApiClient
 import os
 import traceback
 
@@ -12,7 +12,8 @@ from anime_search import handle_anime_search
 
 app = Flask(__name__)
 
-configuration = Configuration(token=os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
+# LINE Bot API 初期化（v3 SDK）
+config = Configuration(access_token=os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
 handler = WebhookHandler(os.environ.get("LINE_CHANNEL_SECRET"))
 
 user_state = {}
@@ -31,8 +32,8 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
-    with ApiClient(configuration) as api_client:
-        line_bot_api = MessagingApi(api_client)
+    with ApiClient(config) as client:
+        messaging_api = MessagingApi(client)
         try:
             user_id = event.source.user_id
             user_msg = event.message.text.strip().lower()
@@ -55,13 +56,12 @@ def handle_message(event):
             else:
                 result = f"あなたが送ったメッセージ：{event.message.text}"
 
-            line_bot_api.reply_message_with_http_info(
+            messaging_api.reply_message_with_http_info(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
                     messages=[TextMessage(text=result)]
                 )
             )
-
         except Exception as e:
             print("[ERROR in handle_message]", e)
             print(traceback.format_exc())
