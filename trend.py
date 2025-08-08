@@ -1,3 +1,4 @@
+#trend.py
 from pytrends.request import TrendReq
 import re
 from collections import defaultdict
