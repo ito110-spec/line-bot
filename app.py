@@ -46,7 +46,7 @@ def handle_message(event):
                 result = "検索したい単語を入力してください（例：新潟、駅）"
             elif user_state.get(user_id) == "awaiting_keyword":
                 user_state[user_id] = None
-                result = extract_main_and_sub_related(user_msg)
+                result = extract_main_and_sub_related(user_id, user_msg)
             elif user_msg == "アニメ検索":
                 user_state[user_id] = "anime_search_waiting_for_title"
                 anime_search_states[user_id] = {"titles": []}
