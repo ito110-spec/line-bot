@@ -4,7 +4,7 @@ from collections import defaultdict
 import time
 import random
 
-def extract_main_and_sub_related(user_input: str, max_results=10):
+def extract_main_and_sub_related(user_id: str, user_input: str, max_results=10):
     try:
         query = user_input.strip()
         time.sleep(random.uniform(6, 10))  # 強制ウェイト
