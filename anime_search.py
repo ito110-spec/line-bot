@@ -1,13 +1,41 @@
-# anime_search.py
+import requests
+from janome.tokenizer import Tokenizer
 
-# ユーザーID別にタイトルを貯めて「検索」が来るまで待つ形を想定
+HUGGINGFACE_API_TOKEN = "hf_xxx"  # 取得したトークン
+API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct"
+
+headers = {
+    "Authorization": f"Bearer {HUGGINGFACE_API_TOKEN}"
+}
+
+def query_huggingface(prompt):
+    payload = {
+        "inputs": prompt,
+        "parameters": {"max_new_tokens": 300}
+    }
+    response = requests.post(API_URL, headers=headers, json=payload)
+    if response.status_code == 200:
+        data = response.json()
+        # モデルによっては応答の構造が違う場合もあるので調整してね
+        return data[0]["generated_text"] if isinstance(data, list) else data.get("generated_text", "")
+    else:
+        return None
+
+def extract_keywords(text):
+    tokenizer = Tokenizer()
+    tokens = tokenizer.tokenize(text)
+    keywords = []
+    for token in tokens:
+        part = token.part_of_speech.split(',')[0]
+        if part in ["名詞", "形容詞"]:
+            keywords.append(token.base_form)
+    # 重複除去して返す
+    return list(set(keywords))
 
 def handle_anime_search(user_id, user_msg, anime_search_states):
-    # user_msg はすでに小文字に変換されている想定
-
+    user_msg = user_msg.lower()
     state = anime_search_states.get(user_id)
     if state is None:
-        # 状態がない場合は初期化（念のため）
         anime_search_states[user_id] = {"titles": []}
         state = anime_search_states[user_id]
 
@@ -16,17 +44,26 @@ def handle_anime_search(user_id, user_msg, anime_search_states):
         if not titles:
             return "まだアニメタイトルが入力されていません。好きなアニメを教えてください。"
 
-        # ここでタイトルに基づくおすすめロジックを入れる（今は仮で返す）
-        # 例: 「転スラ」とかにマッチしたおすすめリストを返すなど
+        # プロンプト作成
+        prompt = (
+            f"以下のアニメタイトルについて、それぞれのストーリーの特徴を4つのカテゴリで2つずつ挙げてください。\n"
+            f"カテゴリ: 感情要素, ストーリー展開要素, キャラクター要素, 世界観要素\n"
+            f"タイトル一覧: {', '.join(titles)}\n"
+            "回答はカテゴリごとに箇条書きで簡潔に。"
+        )
 
-        recommended = f"あなたが入力したタイトル: {', '.join(titles)}\nおすすめアニメは後で実装します！"
+        result = query_huggingface(prompt)
+        if not result:
+            return "おすすめを取得中にエラーが発生しました。もう一度やり直してください。"
+
+        keywords = extract_keywords(result)
 
         # 状態リセット
         anime_search_states[user_id] = {"titles": []}
-        return recommended
+
+        return f"おすすめ生成結果:\n{result}\n\n抽出タグ:\n{', '.join(keywords)}\n"
 
     else:
-        # 「検索」以外はタイトルとして追加
         titles = state.get("titles", [])
         titles.append(user_msg)
         state["titles"] = titles
