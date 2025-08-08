@@ -1,8 +1,7 @@
 from flask import Flask, request, abort
-from linebot.v3.messaging import MessagingApi, Configuration
+from linebot.v3.messaging import MessagingApi, Configuration, TextMessage, ReplyMessageRequest
 from linebot.v3.webhook import WebhookHandler
-from linebot.v3.webhooks import MessageEvent, TextMessageContent
-from linebot.v3.messaging import TextMessage, ReplyMessageRequest
+from linebot.v3.webhooks import MessageEvent, TextMessage as WebhookTextMessage
 import os
 import traceback
 
@@ -32,7 +31,7 @@ def callback():
         abort(400)
     return "OK"
 
-@handler.add(MessageEvent, message=TextMessageContent)
+@handler.add(MessageEvent, message=WebhookTextMessage)
 def handle_message(event):
     try:
         user_id = event.source.user_id
@@ -44,26 +43,31 @@ def handle_message(event):
             print("[ACTION] fortune")
             result = get_fortune(user_id)
 
+        # 流行検索開始コマンド
         elif user_msg == "流行検索":
             print("[ACTION] trend start")
             user_state[user_id] = "awaiting_keyword"
             result = "検索したい単語を入力してください（例：新潟、駅）"
 
+        # 流行検索のキーワード入力受付中
         elif user_state.get(user_id) == "awaiting_keyword":
             print("[ACTION] trend keyword input")
             user_state[user_id] = None
             result = extract_main_and_sub_related(user_msg)
 
+        # アニメ検索開始
         elif user_msg == "アニメ検索":
             print("[ACTION] anime search start")
             user_state[user_id] = "anime_search_waiting_for_title"
             anime_search_states[user_id] = {"titles": []}
             result = "好きなアニメを教えてください。複数入れてもOK。タイトルか「検索」と入力してください。"
 
+        # アニメ検索のタイトル入力待ち
         elif user_state.get(user_id) == "anime_search_waiting_for_title":
             result = handle_anime_search(user_id, user_msg, anime_search_states)
 
         else:
+            # その他のメッセージはそのまま返す
             result = f"あなたが送ったメッセージ：{event.message.text}"
 
         # ✅ 正しい返信方法（v3）
@@ -84,5 +88,4 @@ print("certifi cacert.pem path:", certifi.where())
 print("SSL_CERT_FILE env:", os.environ.get("SSL_CERT_FILE"))
 
 if __name__ == "__main__":
-    # ポートやデバッグモードは環境に合わせて変更可能
     app.run(host="0.0.0.0", port=5000, debug=False)
