@@ -20,4 +20,4 @@ ENV SSL_CERT_FILE=/usr/local/lib/python3.9/site-packages/certifi/cacert.pem
 
 COPY . .
 
-CMD ["python", "app.py"]
+CMD ["python", "-u", "app.py"]
