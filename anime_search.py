@@ -1,30 +1,21 @@
-from groq import Groq
+import google.generativeai as genai
 from janome.tokenizer import Tokenizer
 import os
 
-# Groq API キーを環境変数から取得
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+# Gemini APIキー（環境変数から取得）
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=GEMINI_API_KEY)
 
-# Groq クライアント初期化
-client = Groq(api_key=GROQ_API_KEY)
+# モデル指定（Gemini 1.5 Flash推奨：速くて安い）
+GEMINI_MODEL = "gemini-1.5-flash"
 
-# モデル指定（例：llama3-8b-8192）
-GROQ_MODEL = "llama3-8b-8192"
-
-def query_groq(prompt):
+def query_gemini(prompt):
     try:
-        response = client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": "あなたはアニメのストーリー要素に詳しいAIです。"},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=500
-        )
-        return response.choices[0].message.content
+        model = genai.GenerativeModel(GEMINI_MODEL)
+        response = model.generate_content(prompt)
+        return response.text.strip() if response and response.text else None
     except Exception as e:
-        print(f"Groq API エラー: {e}")
+        print(f"Gemini API エラー: {e}")
         return None
 
 def extract_keywords(text):
@@ -56,7 +47,7 @@ def handle_anime_search(user_id, user_msg, anime_search_states):
             "回答はカテゴリごとに箇条書きで簡潔に。"
         )
 
-        result = query_groq(prompt)
+        result = query_gemini(prompt)
         if not result:
             return "おすすめを取得中にエラーが発生しました。もう一度やり直してください。"
 
