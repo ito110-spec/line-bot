@@ -11,8 +11,6 @@ genai.configure(api_key=GEMINI_API_KEY)
 GEMINI_MODEL = "gemini-1.5-flash"
 
 def query_gemini(prompt, attempts=4):
-    """Gemini に問い合わせ。失敗時は指数バックオフでリトライ。
-       ログを詳細に出すので原因特定に使ってください。"""
     if not os.getenv("GEMINI_API_KEY"):
         print("[DEBUG] GEMINI_API_KEY が見つかりません。環境変数を確認してください。")
         return None
@@ -20,37 +18,35 @@ def query_gemini(prompt, attempts=4):
     for attempt in range(1, attempts + 1):
         try:
             model = genai.GenerativeModel(GEMINI_MODEL)
-            # 必要なら max_output_tokens 等パラメータを加える
             response = model.generate_content(prompt)
+
             text = None
-            # response の形が変わるライブラリ差に備える
             if hasattr(response, "text") and response.text:
                 text = response.text
             elif isinstance(response, dict) and "candidates" in response:
-                # まれに dict 返り値のケースに備え
                 text = response["candidates"][0].get("content", "")
             else:
                 text = str(response)
 
             if text:
+                print(f"[DEBUG] Gemini 応答内容(attempt {attempt}): {text}")
                 return text.strip()
             else:
                 print(f"[DEBUG] Gemini 応答が空でした。attempt={attempt}, response={response}")
-                # 続けてリトライ
 
         except Exception as e:
             print(f"[ERROR] Gemini API エラー (attempt {attempt}): {e}")
+            import traceback
             traceback.print_exc()
 
-        # リトライ待ち（指数バックオフ）
         if attempt < attempts:
-            wait = (2 ** (attempt - 1)) * 5  # 5s,10s,20s...
+            wait = (2 ** (attempt - 1)) * 5
             print(f"[DEBUG] 再試行まで待機: {wait}s")
             time.sleep(wait)
 
-    # 全滅
     print("[DEBUG] Gemini への問い合わせが全て失敗しました。")
     return None
+
 
 def extract_keywords(text):
     tokenizer = Tokenizer()
