@@ -65,18 +65,30 @@ except Exception as e:
 
 def extract_keywords(text):
     print("[DEBUG] extract_keywords called", file=sys.stderr)
+    print("[DEBUG] 入力テキスト:", repr(text), file=sys.stderr)  # 空文字やNone確認用
+
+    if not text:
+        print("[WARN] 入力テキストが空です", file=sys.stderr)
+        return []
+
     if tagger is None:
+        print("[ERROR] Taggerが初期化されていません", file=sys.stderr)
         return []
 
     keywords = []
     for word in tagger(text):
         print(f"[DEBUG] surface={word.surface}, feature={word.feature}", file=sys.stderr)
-        if any(pos in word.feature for pos in ["名詞", "形容詞"]):
+
+        # 名詞 または 形容詞 で始まる品詞を抽出
+        if word.feature.startswith("名詞") or word.feature.startswith("形容詞"):
             keywords.append(word.surface)
 
+    # 重複除去
     keywords = list(set(keywords))
     print("[DEBUG] 抽出キーワード:", keywords, file=sys.stderr)
+
     return keywords
+
 
 
 
