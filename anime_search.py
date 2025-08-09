@@ -11,6 +11,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 GEMINI_MODEL = "gemini-1.5-flash"
 
 def query_gemini(prompt, attempts=4):
+    print(f"[DEBUG] user_id={user_id}, user_msg={user_msg}")
     if not os.getenv("GEMINI_API_KEY"):
         print("[DEBUG] GEMINI_API_KEY が見つかりません。環境変数を確認してください。")
         return None
@@ -59,6 +60,8 @@ def extract_keywords(text):
     return list(set(keywords))
 
 def handle_anime_search(user_id, user_msg, anime_search_states):
+    print(f"[DEBUG] user_id={user_id}, user_msg={user_msg}")
+    
     user_msg = user_msg.lower()
     state = anime_search_states.get(user_id)
     if state is None:
