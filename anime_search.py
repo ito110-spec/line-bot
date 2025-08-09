@@ -81,7 +81,12 @@ def handle_anime_search(user_id, user_msg, anime_search_states):
             "回答はカテゴリごとに箇条書きで簡潔に。"
         )
 
+        print("[DEBUG] Geminiに問い合わせるプロンプト:", prompt)   # ← ここ追加
+
         result = query_gemini(prompt)
+
+        print("[DEBUG] Geminiからの応答:", result)   # ← ここ追加
+
         if not result:
             return "おすすめを取得中にエラーが発生しました。もう一度やり直してください。"
 
