@@ -3,6 +3,7 @@ import MeCab
 import os
 import time
 import traceback
+import sys
 
 # Gemini APIキー（環境変数から取得）
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
