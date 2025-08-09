@@ -91,6 +91,7 @@ try:
     print("[DEBUG] fugashi Tagger初期化成功", file=sys.stderr)
 except Exception as e:
     print("[ERROR] fugashi Tagger初期化失敗:", e, file=sys.stderr)
+    traceback.print_exc()  # 追加でスタックトレースも表示
 
 def extract_keywords(text):
     print("[DEBUG] extract_keywords called", file=sys.stderr)
@@ -131,8 +132,8 @@ def handle_anime_search(user_id, user_msg, anime_search_states):
             return "まだアニメタイトルが入力されていません。好きなアニメを教えてください。"
 
         prompt = (
-            f"以下のアニメタイトルについて、それぞれのストーリーの特徴を4つのカテゴリで3つずつ挙げてください。\n"
-            f"カテゴリ: 感情要素, ストーリー展開要素, 登場キャラ内面/心理要素, 世界観要素\n"
+            f"以下のアニメタイトルについて、それぞれのストーリーの特徴を4つのカテゴリで5つずつ挙げてください。\n"
+            f"カテゴリ: 視聴者の感想/感情要素, ストーリー展開要素, 登場キャラ内面/心理要素, 世界観要素\n"
             f"タイトル一覧: {', '.join(titles)}\n"
             "回答はカテゴリごとに箇条書きで簡潔に。"
         )
