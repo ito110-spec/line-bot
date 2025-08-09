@@ -1,7 +1,8 @@
 import google.generativeai as genai
 from janome.tokenizer import Tokenizer
 import os
-import time, traceback
+import time
+import traceback
 
 # Gemini APIキー（環境変数から取得）
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -11,8 +12,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 GEMINI_MODEL = "gemini-1.5-flash"
 
 def query_gemini(prompt, attempts=4):
-    print(f"[DEBUG] user_id={user_id}, user_msg={user_msg}")
-    if not os.getenv("GEMINI_API_KEY"):
+    if not GEMINI_API_KEY:
         print("[DEBUG] GEMINI_API_KEY が見つかりません。環境変数を確認してください。")
         return None
 
@@ -37,7 +37,6 @@ def query_gemini(prompt, attempts=4):
 
         except Exception as e:
             print(f"[ERROR] Gemini API エラー (attempt {attempt}): {e}")
-            import traceback
             traceback.print_exc()
 
         if attempt < attempts:
@@ -59,10 +58,11 @@ def extract_keywords(text):
             keywords.append(token.base_form)
     return list(set(keywords))
 
+
 def handle_anime_search(user_id, user_msg, anime_search_states):
     print(f"[DEBUG] user_id={user_id}, user_msg={user_msg}")
-    
-    user_msg = user_msg.lower()
+
+    user_msg = user_msg.strip().lower()
     state = anime_search_states.get(user_id)
     if state is None:
         anime_search_states[user_id] = {"titles": []}
@@ -80,23 +80,4 @@ def handle_anime_search(user_id, user_msg, anime_search_states):
             "回答はカテゴリごとに箇条書きで簡潔に。"
         )
 
-        print("[DEBUG] Geminiに問い合わせるプロンプト:", prompt)   # ← ここ追加
-
-        result = query_gemini(prompt)
-
-        print("[DEBUG] Geminiからの応答:", result)   # ← ここ追加
-
-        if not result:
-            return "おすすめを取得中にエラーが発生しました。もう一度やり直してください。"
-
-        keywords = extract_keywords(result)
-
-        anime_search_states[user_id] = {"titles": []}
-
-        return f"おすすめ生成結果:\n{result}\n\n抽出タグ:\n{', '.join(keywords)}\n"
-
-    else:
-        titles = state.get("titles", [])
-        titles.append(user_msg)
-        state["titles"] = titles
-        return f"タイトル「{user_msg}」を登録しました。ほかのタイトルか「検索」と入力してください。"
+        pr
