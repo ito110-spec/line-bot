@@ -6,6 +6,12 @@ import sys
 
 from fugashi import Tagger
 
+import subprocess
+
+paths = subprocess.getoutput("find / -name mecabrc 2>/dev/null")
+print("[DEBUG] mecabrc files found:\n" + paths)
+
+
 # Gemini APIキー（環境変数から取得）
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
@@ -53,7 +59,7 @@ def extract_keywords(text):
     print("[DEBUG] extract_keywords called", file=sys.stderr)
     try:
         # fugashiのTaggerインスタンス生成（unidic-lite辞書を想定）
-        tagger = Tagger()
+        tagger = Tagger(rcfile="/etc/mecabrc")
         print("[DEBUG] fugashi Tagger初期化成功")
     except Exception as e:
         print("[ERROR] fugashi Tagger初期化失敗:", e)
