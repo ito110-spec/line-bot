@@ -61,6 +61,7 @@ def extract_keywords(text):
     node = tagger.parseToNode(text)
     keywords = []
     while node:
+        print(f"[DEBUG] surface={node.surface}, feature={node.feature}")
         features = node.feature.split(",")
         pos = features[0]  # 品詞
         if pos in ["名詞", "形容詞"]:
