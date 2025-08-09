@@ -53,11 +53,27 @@ def query_gemini(prompt, attempts=4):
     print("[DEBUG] Gemini への問い合わせが全て失敗しました。")
     return None
 
+def find_file(name):
+    result = subprocess.getoutput(f"find / -name {name} 2>/dev/null")
+    files = [line for line in result.split("\n") if os.path.isfile(line)]
+    return files[0] if files else None
+
+# mecabrc と辞書の場所を探す
+mecabrc_path = find_file("mecabrc")
+dic_path = find_file("mecab-ipadic")
+
+print(f"[DEBUG] mecabrc: {mecabrc_path}", file=sys.stderr)
+print(f"[DEBUG] dic: {dic_path}", file=sys.stderr)
+
 # Tagger 初期化
 tagger = None
 try:
-    # '-r' で mecabrc を指定
-    tagger = Tagger('-r /etc/mecabrc')
+    args = []
+    if mecabrc_path:
+        args.append(f"-r {mecabrc_path}")
+    if dic_path:
+        args.append(f"-d {dic_path}")
+    tagger = Tagger(" ".join(args))
     print("[DEBUG] fugashi Tagger初期化成功", file=sys.stderr)
 except Exception as e:
     print("[ERROR] fugashi Tagger初期化失敗:", e, file=sys.stderr)
