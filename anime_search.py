@@ -55,21 +55,22 @@ def query_gemini(prompt, attempts=4):
     print("[DEBUG] Gemini への問い合わせが全て失敗しました。")
     return None
 
+try:
+    # mecabrc を指定する場合は '-r' オプションを渡す
+    tagger = Tagger('-r /etc/mecabrc')
+    print("[DEBUG] fugashi Tagger初期化成功", file=sys.stderr)
+except Exception as e:
+    print("[ERROR] fugashi Tagger初期化失敗:", e, file=sys.stderr)
+    tagger = None
+
 def extract_keywords(text):
     print("[DEBUG] extract_keywords called", file=sys.stderr)
-    try:
-        # fugashiのTaggerインスタンス生成（unidic-lite辞書を想定）
-        tagger = Tagger(rcfile="/etc/mecabrc")
-        print("[DEBUG] fugashi Tagger初期化成功")
-    except Exception as e:
-        print("[ERROR] fugashi Tagger初期化失敗:", e)
+    if tagger is None:
         return []
 
     keywords = []
     for word in tagger(text):
         print(f"[DEBUG] surface={word.surface}, feature={word.feature}", file=sys.stderr)
-        # 品詞情報はスペース区切りで入っていることが多い
-        # 名詞 or 形容詞なら追加
         if any(pos in word.feature for pos in ["名詞", "形容詞"]):
             keywords.append(word.surface)
 
