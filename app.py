@@ -43,7 +43,7 @@ def handle_message(event):
                 result = get_fortune(user_id)
             elif user_msg == "流行検索":
                 user_state[user_id] = "awaiting_keyword"
-                result = "検索したい単語を入力してください（例：新潟、駅）"
+                result = "検索したい単語を入力してください（例：マック、新潟）"
             elif user_state.get(user_id) == "awaiting_keyword":
                 user_state[user_id] = None
                 result = extract_main_and_sub_related(user_id, user_msg)
