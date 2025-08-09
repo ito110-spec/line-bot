@@ -53,6 +53,7 @@ import MeCab
 import MeCab
 
 def extract_keywords(text):
+    print("[DEBUG] extract_keywords called") 
     try:
         # 辞書パスを明示的に指定（必要に応じてパス変更）
         tagger = MeCab.Tagger("-Ochasen -d /var/lib/mecab/dic/ipadic")
