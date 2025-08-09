@@ -5,6 +5,8 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 from linebot.v3.messaging import ApiClient
 import os
 import traceback
+import sys
+import MeCab
 
 from fortune import get_fortune
 from trend import extract_main_and_sub_related
