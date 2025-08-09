@@ -3,10 +3,8 @@ import os
 import time
 import traceback
 import sys
-
-from fugashi import Tagger
-
 import subprocess
+from fugashi import Tagger
 
 paths = subprocess.getoutput("find / -name mecabrc 2>/dev/null")
 print("[DEBUG] mecabrc files found:\n" + paths)
@@ -55,17 +53,18 @@ def query_gemini(prompt, attempts=4):
     print("[DEBUG] Gemini への問い合わせが全て失敗しました。")
     return None
 
+# Tagger 初期化
+tagger = None
 try:
-    # mecabrc を指定する場合は '-r' オプションを渡す
+    # '-r' で mecabrc を指定
     tagger = Tagger('-r /etc/mecabrc')
     print("[DEBUG] fugashi Tagger初期化成功", file=sys.stderr)
 except Exception as e:
     print("[ERROR] fugashi Tagger初期化失敗:", e, file=sys.stderr)
-    tagger = None
 
 def extract_keywords(text):
     print("[DEBUG] extract_keywords called", file=sys.stderr)
-    print("[DEBUG] 入力テキスト:", repr(text), file=sys.stderr)  # 空文字やNone確認用
+    print("[DEBUG] 入力テキスト:", repr(text), file=sys.stderr)
 
     if not text:
         print("[WARN] 入力テキストが空です", file=sys.stderr)
@@ -78,15 +77,14 @@ def extract_keywords(text):
     keywords = []
     for word in tagger(text):
         print(f"[DEBUG] surface={word.surface}, feature={word.feature}", file=sys.stderr)
-
-        # 名詞 または 形容詞 で始まる品詞を抽出
-        if word.feature.startswith("名詞") or word.feature.startswith("形容詞"):
+        # featureをカンマ分割し、先頭の品詞を取得
+        pos = word.feature.split(",")[0]
+        if pos in ("名詞", "形容詞"):
             keywords.append(word.surface)
 
     # 重複除去
-    keywords = list(set(keywords))
+    keywords = sorted(set(keywords))
     print("[DEBUG] 抽出キーワード:", keywords, file=sys.stderr)
-
     return keywords
 
 
