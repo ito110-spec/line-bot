@@ -54,35 +54,29 @@ import MeCab
 
 def extract_keywords(text):
     try:
-        tagger = MeCab.Tagger()
-        tagger.parse('')  # Unicodeバグ回避
+        # 辞書パスを明示的に指定（必要に応じてパス変更）
+        tagger = MeCab.Tagger("-Ochasen -d /var/lib/mecab/dic/ipadic")
+        print("[DEBUG] MeCab初期化成功")
     except RuntimeError as e:
         print("[ERROR] MeCab初期化失敗:", e)
         return []
 
+    parsed = tagger.parse(text)
+    print("[DEBUG] parse() 出力:\n", parsed)
+
     node = tagger.parseToNode(text)
-    keywords = set()
-
+    keywords = []
     while node:
-        surface = node.surface.strip()
-        if not surface:  # 空ノードはスキップ
-            node = node.next
-            continue
-
+        print(f"[DEBUG] surface={node.surface}, feature={node.feature}")
         features = node.feature.split(",")
-        pos = features[0] if features else ""
-
-        # 名詞・形容詞・未知語(英語含む)も拾う
-        if pos in ["名詞", "形容詞", "固有名詞", "未知語"]:
-            keywords.add(surface)
-        elif pos == "記号" and surface.isalpha():  # 英単語を拾う
-            keywords.add(surface)
-
+        pos = features[0]  # 品詞
+        if pos in ["名詞", "形容詞"]:
+            keywords.append(node.surface)
         node = node.next
 
-    # 1文字だけのノイズを除外（例: 「の」「は」）
-    filtered = [kw for kw in keywords if len(kw) > 1]
-    return filtered
+    keywords = list(set(keywords))
+    print("[DEBUG] 抽出キーワード:", keywords)
+    return keywords
 
 
 
