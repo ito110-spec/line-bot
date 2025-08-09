@@ -48,7 +48,7 @@ def query_gemini(prompt, attempts=4):
     return None
 
 def extract_keywords(text):
-    print("[DEBUG] extract_keywords called") 
+    print("[DEBUG] extract_keywords called", file=sys.stderr) 
     try:
         # 辞書パスを明示的に指定（必要に応じてパス変更）
         tagger = MeCab.Tagger("-Ochasen -d /var/lib/mecab/dic/ipadic")
