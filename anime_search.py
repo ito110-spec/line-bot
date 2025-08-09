@@ -48,26 +48,25 @@ def query_gemini(prompt, attempts=4):
     return None
 
 
+import MeCab
+
 def extract_keywords(text):
-    tagger = MeCab.Tagger("-Ochasen")
-    parsed = tagger.parse(text)
-    keywords = set()
+    try:
+        # 1. -Ochasen外すだけでも動く可能性あり
+        tagger = MeCab.Tagger()
+    except RuntimeError as e:
+        print("[ERROR] MeCab初期化失敗:", e)
+        return []
 
-    for line in parsed.split('\n'):
-        if line == 'EOS' or line == '':
-            continue
-        cols = line.split('\t')
-        if len(cols) < 4:
-            continue
-        surface = cols[0]
-        pos = cols[3].split('-')[0]  # 品詞大分類（例: 名詞, 動詞など）
-        # 名詞または形容詞を抽出（名詞-一般、名詞-固有名詞なども含む）
-        if pos in ['名詞', '形容詞']:
-            # 記号や1文字のものは除外
-            if len(surface) > 1 and not any(ch in surface for ch in '、。・*:/'):
-                keywords.add(surface)
-
-    return list(keywords)
+    node = tagger.parseToNode(text)
+    keywords = []
+    while node:
+        features = node.feature.split(",")
+        pos = features[0]  # 品詞
+        if pos in ["名詞", "形容詞"]:
+            keywords.append(node.surface)
+        node = node.next
+    return list(set(keywords))
 
 
 def handle_anime_search(user_id, user_msg, anime_search_states):
