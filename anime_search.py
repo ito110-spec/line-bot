@@ -50,24 +50,40 @@ def query_gemini(prompt, attempts=4):
 
 import MeCab
 
+import MeCab
+
 def extract_keywords(text):
     try:
-        # 1. -Ochasen外すだけでも動く可能性あり
         tagger = MeCab.Tagger()
+        tagger.parse('')  # Unicodeバグ回避
     except RuntimeError as e:
         print("[ERROR] MeCab初期化失敗:", e)
         return []
 
     node = tagger.parseToNode(text)
-    keywords = []
+    keywords = set()
+
     while node:
-        print(f"[DEBUG] surface={node.surface}, feature={node.feature}")
+        surface = node.surface.strip()
+        if not surface:  # 空ノードはスキップ
+            node = node.next
+            continue
+
         features = node.feature.split(",")
-        pos = features[0]  # 品詞
-        if pos in ["名詞", "形容詞"]:
-            keywords.append(node.surface)
+        pos = features[0] if features else ""
+
+        # 名詞・形容詞・未知語(英語含む)も拾う
+        if pos in ["名詞", "形容詞", "固有名詞", "未知語"]:
+            keywords.add(surface)
+        elif pos == "記号" and surface.isalpha():  # 英単語を拾う
+            keywords.add(surface)
+
         node = node.next
-    return list(set(keywords))
+
+    # 1文字だけのノイズを除外（例: 「の」「は」）
+    filtered = [kw for kw in keywords if len(kw) > 1]
+    return filtered
+
 
 
 def handle_anime_search(user_id, user_msg, anime_search_states):
