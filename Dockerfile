@@ -3,12 +3,9 @@ FROM python:3.9-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
-    mecab libmecab-dev build-essential curl xz-utils file && \
-    curl -L -o /tmp/mecab-ipadic.tar.gz "https://github.com/taku910/mecab/releases/download/v0.996/mecab-ipadic-2.7.0-20070801.tar.gz" && \
-    mkdir -p /usr/local/lib/mecab/dic && \
-    tar zxvf /tmp/mecab-ipadic.tar.gz -C /tmp && \
-    cd /tmp/mecab-ipadic-2.7.0-20070801 && ./configure --prefix=/usr/local/lib/mecab/dic/ipadic && make && make install && \
-    rm -rf /tmp/mecab-ipadic*
+    mecab libmecab-dev mecab-ipadic-utf8 build-essential curl xz-utils file autoconf automake libtool pkg-config && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
