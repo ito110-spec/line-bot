@@ -47,11 +47,6 @@ def query_gemini(prompt, attempts=4):
     print("[DEBUG] Gemini への問い合わせが全て失敗しました。")
     return None
 
-
-import MeCab
-
-import MeCab
-
 def extract_keywords(text):
     print("[DEBUG] extract_keywords called") 
     try:
