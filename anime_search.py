@@ -58,12 +58,26 @@ def find_file(name):
     files = [line for line in result.split("\n") if os.path.isfile(line)]
     return files[0] if files else None
 
+def find_dic_dir(name):
+    """
+    mecab-ipadicなどの辞書フォルダの親ディレクトリを返す
+    例: /usr/lib/x86_64-linux-gnu/mecab/dic/ipadic なら
+         /usr/lib/x86_64-linux-gnu/mecab/dic を返す
+    """
+    result = subprocess.getoutput(f"find / -type d -name {name} 2>/dev/null")
+    dirs = [line for line in result.split("\n") if os.path.isdir(line)]
+    if not dirs:
+        return None
+    dic_path = dirs[0]
+    parent_dir = os.path.dirname(dic_path)
+    return parent_dir
+
 # mecabrc と辞書の場所を探す
 mecabrc_path = find_file("mecabrc")
-dic_path = find_file("mecab-ipadic")
+dic_parent_dir = find_dic_dir("mecab-ipadic")
 
 print(f"[DEBUG] mecabrc: {mecabrc_path}", file=sys.stderr)
-print(f"[DEBUG] dic: {dic_path}", file=sys.stderr)
+print(f"[DEBUG] mecab-ipadic親ディレクトリ: {dic_parent_dir}", file=sys.stderr)
 
 # Tagger 初期化
 tagger = None
@@ -71,8 +85,8 @@ try:
     args = []
     if mecabrc_path:
         args.append(f"-r {mecabrc_path}")
-    if dic_path:
-        args.append(f"-d {dic_path}")
+    if dic_parent_dir:
+        args.append(f"-d {dic_parent_dir}")
     tagger = Tagger(" ".join(args))
     print("[DEBUG] fugashi Tagger初期化成功", file=sys.stderr)
 except Exception as e:
@@ -93,17 +107,13 @@ def extract_keywords(text):
     keywords = []
     for word in tagger(text):
         print(f"[DEBUG] surface={word.surface}, feature={word.feature}", file=sys.stderr)
-        # featureをカンマ分割し、先頭の品詞を取得
         pos = word.feature.split(",")[0]
         if pos in ("名詞", "形容詞"):
             keywords.append(word.surface)
 
-    # 重複除去
     keywords = sorted(set(keywords))
     print("[DEBUG] 抽出キーワード:", keywords, file=sys.stderr)
     return keywords
-
-
 
 
 def handle_anime_search(user_id, user_msg, anime_search_states):
