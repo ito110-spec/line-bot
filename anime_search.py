@@ -1,9 +1,10 @@
 import google.generativeai as genai
-import MeCab
 import os
 import time
 import traceback
 import sys
+
+from fugashi import Tagger
 
 # Gemini APIキー（環境変数から取得）
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -49,30 +50,25 @@ def query_gemini(prompt, attempts=4):
     return None
 
 def extract_keywords(text):
-    print("[DEBUG] extract_keywords called", file=sys.stderr) 
+    print("[DEBUG] extract_keywords called", file=sys.stderr)
     try:
-        # 辞書パスを明示的に指定（必要に応じてパス変更）
-        tagger = MeCab.Tagger("-Ochasen -d /var/lib/mecab/dic/ipadic")
-        print("[DEBUG] MeCab初期化成功")
-    except RuntimeError as e:
-        print("[ERROR] MeCab初期化失敗:", e)
+        # fugashiのTaggerインスタンス生成（unidic-lite辞書を想定）
+        tagger = Tagger()
+        print("[DEBUG] fugashi Tagger初期化成功")
+    except Exception as e:
+        print("[ERROR] fugashi Tagger初期化失敗:", e)
         return []
 
-    parsed = tagger.parse(text)
-    print("[DEBUG] parse() 出力:\n", parsed)
-
-    node = tagger.parseToNode(text)
     keywords = []
-    while node:
-        print(f"[DEBUG] surface={node.surface}, feature={node.feature}")
-        features = node.feature.split(",")
-        pos = features[0]  # 品詞
-        if pos in ["名詞", "形容詞"]:
-            keywords.append(node.surface)
-        node = node.next
+    for word in tagger(text):
+        print(f"[DEBUG] surface={word.surface}, feature={word.feature}", file=sys.stderr)
+        # 品詞情報はスペース区切りで入っていることが多い
+        # 名詞 or 形容詞なら追加
+        if any(pos in word.feature for pos in ["名詞", "形容詞"]):
+            keywords.append(word.surface)
 
     keywords = list(set(keywords))
-    print("[DEBUG] 抽出キーワード:", keywords)
+    print("[DEBUG] 抽出キーワード:", keywords, file=sys.stderr)
     return keywords
 
 
