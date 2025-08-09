@@ -1,5 +1,5 @@
 import google.generativeai as genai
-from janome.tokenizer import Tokenizer
+import MeCab
 import os
 import time
 import traceback
@@ -49,14 +49,25 @@ def query_gemini(prompt, attempts=4):
 
 
 def extract_keywords(text):
-    tokenizer = Tokenizer()
-    tokens = tokenizer.tokenize(text)
-    keywords = []
-    for token in tokens:
-        part = token.part_of_speech.split(',')[0]
-        if part in ["名詞", "形容詞"]:
-            keywords.append(token.base_form)
-    return list(set(keywords))
+    tagger = MeCab.Tagger("-Ochasen")
+    parsed = tagger.parse(text)
+    keywords = set()
+
+    for line in parsed.split('\n'):
+        if line == 'EOS' or line == '':
+            continue
+        cols = line.split('\t')
+        if len(cols) < 4:
+            continue
+        surface = cols[0]
+        pos = cols[3].split('-')[0]  # 品詞大分類（例: 名詞, 動詞など）
+        # 名詞または形容詞を抽出（名詞-一般、名詞-固有名詞なども含む）
+        if pos in ['名詞', '形容詞']:
+            # 記号や1文字のものは除外
+            if len(surface) > 1 and not any(ch in surface for ch in '、。・*:/'):
+                keywords.add(surface)
+
+    return list(keywords)
 
 
 def handle_anime_search(user_id, user_msg, anime_search_states):
