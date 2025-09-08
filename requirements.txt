@@ -8,3 +8,4 @@ fugashi[unidic-lite]
 google-generativeai
 sqlalchemy
 psycopg2-binary
+Pillow
