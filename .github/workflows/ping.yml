@@ -1,0 +1,52 @@
+# ===============================
+# GitHub Actions 設定ファイル
+# Render をスリープさせないために
+# 定期的に ping を送るワークフロー
+#
+# JST (日本時間) 01:30〜08:30 の間は
+# ping を止めるようにしている
+# ===============================
+
+name: Keep Render Awake   # ワークフローの名前（自由に変更可）
+
+on:
+  schedule:
+    # GitHub Actions の cron は UTC 基準
+    # "*/5 * * * *" = 5分ごとに実行
+    - cron: "*/5 * * * *"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest   # GitHub が用意する Linux 環境で実行
+    steps:
+      - name: Check JST time and ping if allowed
+        run: |
+          # 現在時刻を UTC から JST (UTC+9) に変換して取得
+          NOW_JST_H=$(date -u -d '+9 hours' +"%H")   # 時（00-23）
+          NOW_JST_M=$(date -u -d '+9 hours' +"%M")   # 分（00-59）
+
+          # 分単位に変換（例: 01:45 → 105）
+          NOW_JST=$((10#$NOW_JST_H * 60 + 10#$NOW_JST_M))
+
+          # ===========================
+          # JST のスリープ時間を設定
+          # 今回は 01:30 (90分) 〜 08:30 (510分)
+          # ===========================
+          START=$((1 * 60 + 30))   # 90分
+          END=$((8 * 60 + 30))     # 510分
+
+          # スリープ時間内なら ping しないで終了
+          if [ "$NOW_JST" -ge $START ] && [ "$NOW_JST" -lt $END ]; then
+            echo "⏸ 今はメンテナンス時間 (01:30〜08:30 JST)。ping しません。"
+            exit 0
+          fi
+
+          # ===========================
+          # ping 先の Render アプリの URL
+          # ここを自分の Render のドメインに書き換える！
+          # 例: https://my-bot.onrender.com
+          # ===========================
+          TARGET_URL="https://line-bot-1-rsyx.onrender.com"
+
+          echo "✅ Ping $TARGET_URL"
+          curl -fsS --max-time 10 "$TARGET_URL" || echo "⚠️ Ping failed"
