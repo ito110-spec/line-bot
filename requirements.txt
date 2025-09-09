@@ -9,3 +9,4 @@ google-generativeai
 sqlalchemy
 psycopg2-binary
 Pillow
+firebase-admin
