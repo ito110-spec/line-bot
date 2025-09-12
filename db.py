@@ -1,5 +1,6 @@
 # db.py
 import os
+import json
 import requests
 from datetime import datetime, timedelta
 import cloudinary
@@ -15,7 +16,12 @@ cloudinary.config(
 )
 
 # -------------------- Firebase 初期化 --------------------
-cred = credentials.Certificate(os.environ.get("FIREBASE_CREDENTIALS"))
+cred_json = os.environ.get("FIREBASE_CREDENTIALS")
+if not cred_json:
+    raise RuntimeError("環境変数 FIREBASE_CREDENTIALS が設定されていません")
+
+cred_dict = json.loads(cred_json)
+cred = credentials.Certificate(cred_dict)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
