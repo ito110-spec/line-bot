@@ -15,7 +15,16 @@ cloudinary.config(
 )
 
 # -------------------- Firebase 初期化 --------------------
-cred = credentials.Certificate(os.environ.get("FIREBASE_CREDENTIALS"))
+# 環境変数から JSON を取得
+cred_json = os.environ.get("FIREBASE_CREDENTIALS")
+if not cred_json:
+    raise ValueError("FIREBASE_CREDENTIALS が設定されていません")
+
+# JSON文字列 → dict
+cred_dict = json.loads(cred_json)
+
+# Firebase 初期化
+cred = credentials.Certificate(cred_dict)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
