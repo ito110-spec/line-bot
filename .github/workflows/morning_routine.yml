@@ -4,7 +4,7 @@ on:
     # UTC 0:00 = JST 9:00
     # GitHub Actions cron は UTC 時間で指定
     # 分 時 日 月 曜日 の順
-    - cron: "45 12 * * *"  # テスト用: 毎日 JST 21:45 に起動
+    - cron: "55 12 * * *"  # テスト用: 毎日 JST 21:45 に起動
 
 jobs:
   cron:
