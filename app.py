@@ -228,7 +228,7 @@ def cron_job():
 			messaging_api.push_message_with_http_info(
 				PushMessageRequest(
 					to=user_id,
-					messages=[TextMessage(text=f"🌟今日の占い🌟\n{fortune}")]
+					messages=[TextMessage(text=f"{fortune}")]
 				)
 			)
 
