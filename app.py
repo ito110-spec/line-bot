@@ -192,7 +192,15 @@ def callback():
         abort(400)
 
     return 'OK'
-
+# -------------------- Health Check --------------------
+@app.route("/health", methods=['GET'])
+def health():
+    """
+    GitHub Actions などからの定期Ping用
+    Render 無料プランのスリープ回避
+    """
+    return "OK", 200
+    
 # -------------------- 起動 --------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
