@@ -10,3 +10,4 @@ sqlalchemy
 psycopg2-binary
 Pillow
 firebase-admin
+cloudinary
