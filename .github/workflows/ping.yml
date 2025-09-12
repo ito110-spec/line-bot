@@ -5,6 +5,8 @@
 #
 # JST (日本時間) 01:30〜08:30 の間は
 # ping を止めるようにしている
+# Cold Start に耐えられるようタイムアウトを長めに設定
+# また /health エンドポイントを使う
 # ===============================
 
 name: Keep Render Awake   # ワークフローの名前（自由に変更可）
@@ -44,9 +46,11 @@ jobs:
           # ===========================
           # ping 先の Render アプリの URL
           # ここを自分の Render のドメインに書き換える！
-          # 例: https://my-bot.onrender.com
+          # 例: https://my-bot.onrender.com/health
+          # /health エンドポイントを使うことで Cold Start 時も安定
           # ===========================
-          TARGET_URL="https://line-bot-1-rsyx.onrender.com"
+          TARGET_URL="https://line-bot-1-rsyx.onrender.com/health"
 
           echo "✅ Ping $TARGET_URL"
-          curl -fsS --max-time 10 "$TARGET_URL" || echo "⚠️ Ping failed"
+          # タイムアウトを 30 秒に変更して Cold Start に耐える
+          curl -fsS --max-time 30 "$TARGET_URL" || echo "⚠️ Ping failed"
