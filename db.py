@@ -15,7 +15,7 @@ cloudinary.config(
 )
 
 # -------------------- Firebase 初期化 --------------------
-cred = credentials.Certificate(os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"))
+cred = credentials.Certificate(os.environ.get("FIREBASE_CREDENTIALS"))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
