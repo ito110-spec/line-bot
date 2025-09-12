@@ -219,56 +219,55 @@ def cron_job():
 	with ApiClient(config) as client:
 		messaging_api = MessagingApi(client)
 
-		# 1. 占い
-		fortune = get_fortune("cron-system")
-		messaging_api.push_message_with_http_info(
-			PushMessageRequest(
-				to="<<対象のuser_id>>",
-				messages=[TextMessage(text=f"🌟今日の占い🌟\n{fortune}")]
-			)
-		)
+		users = get_all_users()
+		for user_id in users:
 
-		# 2. 猫
-		cat_url, preview = get_cat_video_url()
-		messaging_api.push_message_with_http_info(
-			PushMessageRequest(
-				to="<<対象のuser_id>>",
-				messages=[VideoMessage(original_content_url=cat_url, preview_image_url=preview)]
+			# 1. 占い
+			fortune = get_fortune("cron-system")
+			messaging_api.push_message_with_http_info(
+				PushMessageRequest(
+					to=user_id,
+					messages=[TextMessage(text=f"🌟今日の占い🌟\n{fortune}")]
+				)
 			)
-		)
 
-		# 3. 写真お題（フリー文字列）
-		photo_theme = "今日のお題：#青いもの を撮ってみよう📸"
-		messaging_api.push_message_with_http_info(
-			PushMessageRequest(
-				to="<<対象のuser_id>>",
-				messages=[TextMessage(text=photo_theme)]
+			# 2. 猫
+			cat_url, preview = get_cat_video_url()
+			messaging_api.push_message_with_http_info(
+				PushMessageRequest(
+					to=user_id,
+					messages=[VideoMessage(original_content_url=cat_url, preview_image_url=preview)]
+				)
 			)
-		)
-		# 4. ランダム写真
-		photos = get_recent_photos(days=7)
-		if not photos:
-			reply_messages = [TextMessage(text="まだ写真は保存されていません。")]
-		else:
-			p = random.choice(photos)
-			image_url = p["image_url"]
 
-			reply_messages = [
-				ImageMessage(
-					original_content_url=image_url,
-					preview_image_url=image_url,
+			# 3. 写真お題（フリー文字列）
+			photo_theme = "今日のお題：#青いもの を撮ってみよう📸"
+			messaging_api.push_message_with_http_info(
+				PushMessageRequest(
+					to=user_id,
+					messages=[TextMessage(text=photo_theme)]
+				)
+			)
+			# 4. ランダム写真
+			photos = get_recent_photos(days=7)
+			if photos:
+				p = random.choice(photos)
+				image_msg = ImageMessage(
+					original_content_url=p["image_url"],
+					preview_image_url=p["image_url"],
 					quick_reply=QuickReply(
-						items=[
-							QuickReplyItem(
-								action=PostbackAction(
-									label="👍 いいね",
-									data=f"like_photo:{p['id']}"
-								)
-							)
-						]
+						items=[QuickReplyItem(action=PostbackAction(
+							label="👍 いいね",
+							data=f"like_photo:{p['id']}"
+						))]
 					)
 				)
-			]
+				messaging_api.push_message_with_http_info(
+					PushMessageRequest(
+						to=user_id,
+						messages=[image_msg]
+					)
+				)
 
 	return "OK"
 
