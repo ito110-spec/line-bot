@@ -1,0 +1,8 @@
+on:
+  schedule:
+    - cron: "0 0 * * *"   # UTC 0:00 = JST 9:00
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS https://line-bot-1-rsyx.onrender.com/cron
