@@ -25,7 +25,8 @@ from fortune import get_fortune
 from trend import extract_main_and_sub_related
 from anime_search import handle_anime_search
 from cataas import get_cat_video_url
-from db import init_db, save_image_from_line, get_recent_photos, like_photo, save_user
+from db import init_db, save_image_from_line, get_recent_photos, like_photo, save_user, get_all_users
+
 
 # -------------------- 初期化 --------------------
 init_db()
