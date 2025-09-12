@@ -1,6 +1,5 @@
 # db.py
 import os
-import json
 import requests
 from datetime import datetime, timedelta
 import cloudinary
@@ -16,12 +15,7 @@ cloudinary.config(
 )
 
 # -------------------- Firebase 初期化 --------------------
-cred_json = os.environ.get("FIREBASE_CREDENTIALS")
-if not cred_json:
-    raise RuntimeError("環境変数 FIREBASE_CREDENTIALS が設定されていません")
-
-cred_dict = json.loads(cred_json)
-cred = credentials.Certificate(cred_dict)
+cred = credentials.Certificate(os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -68,23 +62,90 @@ def get_recent_photos(days=7):
     return [doc.to_dict() | {"id": doc.id} for doc in docs]
 
 # -------------------- いいね機能 --------------------
-def like_photo(doc_id: str):
+def like_photo(doc_id: str, user_id: str, session_id: str):
+    """
+    指定された写真に「いいね」を追加する関数
+    - ただし 1つの session_id に対して 1回しか押せない
+    - 同じユーザーでも写真が再表示されたら（別session_idなら）再度いいね可能
+
+    引数:
+        doc_id: Firestore の写真ドキュメントID
+        user_id: LINE ユーザーIDなどの識別子
+        session_id: 「写真を表示した時の一意のセッションID」
+    戻り値:
+        - "already_liked": そのセッションで既にいいね済み
+        - False: 写真が存在しない
+        - int: 更新後のいいね数
+    """
+
+    # ========== 1. このセッションで既に「いいね」していないか確認 ==========
+    session_ref = db.collection("likes_sessions").document(session_id)
+    if session_ref.get().exists:
+        # もし同じ session_id が存在したら、この表示ではもういいね済み
+        return "already_liked"
+
+    # ========== 2. 対象の写真を Firestore から取得 ==========
     doc_ref = db.collection("photos").document(doc_id)
     doc = doc_ref.get()
     if not doc.exists:
+        # 写真が存在しない場合は False を返す
         return False
-    new_likes = doc.to_dict().get("likes", 0) + 1
-    doc_ref.update({"likes": new_likes})
+
+    # ========== 3. 「いいね」数を +1 する ==========
+    current_likes = doc.to_dict().get("likes", 0)  # 既存のいいね数を取得（なければ0）
+    new_likes = current_likes + 1
+    doc_ref.update({"likes": new_likes})  # Firestore の写真ドキュメントを更新
+
+    # ========== 4. このセッションで「いいね」したことを記録 ==========
+    # likes_sessions に {user_id, photo_id, timestamp} を保存しておく
+    session_ref.set({
+        "user_id": user_id,
+        "photo_id": doc_id,
+        "timestamp": firestore.SERVER_TIMESTAMP  # Firestore側で現在時刻を自動設定
+    })
+
+    # ========== 5. 更新後のいいね数を返す ==========
     return new_likes
 
 # -------------------- 写真削除 --------------------
 def delete_photo(doc_id: str):
+    """
+    Firestore の写真と Cloudinary の画像を削除する関数。
+    さらに、この写真に関連する likes_sessions もすべて削除。
+    """
+
+    # ======== 1. 写真ドキュメントを取得 ========
     doc_ref = db.collection("photos").document(doc_id)
     doc = doc_ref.get()
+
     if doc.exists:
-        # Cloudinary は public_id で削除
+        # ======== 2. Cloudinary から画像を削除 ========
         url = doc.to_dict()["image_url"]
         public_id = url.split("/")[-1].split(".")[0]  # 末尾ファイル名からID取得
         cloudinary.uploader.destroy(f"linebot_photos/{public_id}")
-        # Firestore 削除
+
+        # ======== 3. Firestore の likes_sessions を削除 ========
+        # この写真に関連する session ドキュメントを検索して削除
+        sessions_ref = db.collection("likes_sessions")
+        query = sessions_ref.where("photo_id", "==", doc_id).stream()
+        for session_doc in query:
+            session_doc.reference.delete()
+
+        # ======== 4. Firestore の写真ドキュメントを削除 ========
         doc_ref.delete()
+
+# -------------------- ユーザーIDを保存 --------------------
+def save_user(user_id):
+    doc_ref = db.collection("users").document(user_id)
+    if not doc_ref.get().exists:
+        doc_ref.set({
+            "joined_at": firestore.SERVER_TIMESTAMP
+        })
+        print(f"[DB] 新しいユーザー登録: {user_id}")
+    else:
+        print(f"[DB] 既に登録済み: {user_id}")
+
+# -------------------- ユーザーID一覧を取得 --------------------
+def get_all_users():
+    users_ref = db.collection("users").stream()
+    return [doc.id for doc in users_ref] # doc.id が user_id
