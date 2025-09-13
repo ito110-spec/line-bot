@@ -1,56 +1,53 @@
 # ===============================
-# GitHub Actions 設定ファイル
-# Render をスリープさせないために
-# 定期的に ping を送るワークフロー
-#
-# JST (日本時間) 01:30〜08:30 の間は
-# ping を止めるようにしている
-# Cold Start に耐えられるようタイムアウトを長めに設定
-# また /health エンドポイントを使う
+# GitHub Actions ワークフロー
+# Render アプリを定期的に ping してスリープを防ぐ
+# ただし JST 01:30〜08:30 は ping を止める
 # ===============================
 
-name: Keep Render Awake   # ワークフローの名前（自由に変更可）
+name: Keep Render Awake
 
 on:
   schedule:
     # GitHub Actions の cron は UTC 基準
-    # "*/5 * * * *" = 5分ごとに実行
+    # 5分ごとに実行
     - cron: "*/5 * * * *"
 
 jobs:
   ping:
-    runs-on: ubuntu-latest   # GitHub が用意する Linux 環境で実行
+    runs-on: ubuntu-latest
     steps:
       - name: Check JST time and ping if allowed
         run: |
-          # 現在時刻を UTC から JST (UTC+9) に変換して取得
-          NOW_JST_H=$(date -u -d '+9 hours' +"%H")   # 時（00-23）
-          NOW_JST_M=$(date -u -d '+9 hours' +"%M")   # 分（00-59）
+          # -----------------------------
+          # 現在時刻を JST(日本時間) で取得
+          # -----------------------------
+          NOW_JST_H=$(TZ=Asia/Tokyo date +"%H")   # 時 (00〜23)
+          NOW_JST_M=$(TZ=Asia/Tokyo date +"%M")   # 分 (00〜59)
 
           # 分単位に変換（例: 01:45 → 105）
           NOW_JST=$((10#$NOW_JST_H * 60 + 10#$NOW_JST_M))
 
-          # ===========================
-          # JST のスリープ時間を設定
-          # 今回は 01:30 (90分) 〜 08:30 (510分)
-          # ===========================
-          START=$((1 * 60 + 30))   # 90分
-          END=$((8 * 60 + 30))     # 510分
+          echo "⏰ 現在の JST: ${NOW_JST_H}:${NOW_JST_M} (${NOW_JST}分)"
 
-          # スリープ時間内なら ping しないで終了
+          # -----------------------------
+          # スリープさせたい時間帯を設定
+          # -----------------------------
+          START=$((1 * 60 + 30))   # 01:30 = 90分
+          END=$((8 * 60 + 30))     # 08:30 = 510分
+
+          # -----------------------------
+          # 時間判定
+          # -----------------------------
           if [ "$NOW_JST" -ge $START ] && [ "$NOW_JST" -lt $END ]; then
             echo "⏸ 今はメンテナンス時間 (01:30〜08:30 JST)。ping しません。"
             exit 0
           fi
 
-          # ===========================
-          # ping 先の Render アプリの URL
-          # ここを自分の Render のドメインに書き換える！
-          # 例: https://my-bot.onrender.com/health
-          # /health エンドポイントを使うことで Cold Start 時も安定
-          # ===========================
+          # -----------------------------
+          # スリープ時間外なら ping 実行
+          # -----------------------------
           TARGET_URL="https://line-bot-1-rsyx.onrender.com/health"
 
-          echo "✅ Ping $TARGET_URL"
-          # タイムアウトを 30 秒に変更して Cold Start に耐える
+          echo "✅ Ping 実行: $TARGET_URL"
+          # Cold Start に備えてタイムアウト長め
           curl -fsS --max-time 30 "$TARGET_URL" || echo "⚠️ Ping failed"
