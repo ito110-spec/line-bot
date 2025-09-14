@@ -224,7 +224,7 @@ def cron_job():
 		for user_id in users:
 
 			# 1. 占い
-			fortune = get_fortune("cron-system")
+			fortune = get_fortune(user_id)
 			messaging_api.push_message_with_http_info(
 				PushMessageRequest(
 					to=user_id,
