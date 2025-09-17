@@ -268,7 +268,7 @@ def cron_job():
             )
 
             # 3. 写真お題（フリー文字列）
-            photo_theme = "今日のお題：#青いもの を撮ってみよう📸"
+            photo_theme = "今月のお題：\n#飯テロ\n#動物\n#青 \nを撮ってみよう📸"
             messaging_api.push_message_with_http_info(
                 PushMessageRequest(
                     to=user_id,
