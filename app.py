@@ -301,13 +301,13 @@ def cron_job():
 # -------------------- 画像連動削除 --------------------
 @app.route("/cloudinary-webhook", methods=["POST"])
 def cloudinary_webhook():
-    # まずボディを取得 & ログ
-    body = request.get_data()
-    print("[DEBUG] Webhook body bytes:", body)
+    # まずボディ（テキストとバイト両方）を取得
+    body_text = request.get_data(as_text=True)  # str
+    body_bytes = body_text.encode("utf-8")      # bytes
 
     # JSON 解析
     try:
-        data = request.json
+        data = request.get_json(force=True)
         print("[DEBUG] Webhook JSON:", data)
     except Exception as e:
         print("[ERROR] Failed to parse JSON:", e)
@@ -319,15 +319,17 @@ def cloudinary_webhook():
 
     if CLOUDINARY_WEBHOOK_SECRET:
         expected_signature = hmac.new(
-            CLOUDINARY_WEBHOOK_SECRET.encode(),
-            body,
+            CLOUDINARY_WEBHOOK_SECRET.encode("utf-8"),
+            body_bytes,   # ← UTF-8 エンコードした body
             hashlib.sha1
         ).hexdigest()
         print("[DEBUG] Expected signature:", expected_signature)
-        print("[DEBUG] Secret used:", CLOUDINARY_WEBHOOK_SECRET[:6], "...")
 
         if not hmac.compare_digest(signature, expected_signature):
             print("[WARNING] Signature mismatch!")
+            print("[DEBUG] Signature (header):", signature)
+            print("[DEBUG] Signature (calc):  ", expected_signature)
+            print("[DEBUG] Secret used:", CLOUDINARY_WEBHOOK_SECRET[:6], "...")
             return "Forbidden", 403
 
     # 削除イベントか確認
