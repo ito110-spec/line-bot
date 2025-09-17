@@ -301,11 +301,10 @@ def cron_job():
 # -------------------- 画像連動削除 --------------------
 @app.route("/cloudinary-webhook", methods=["POST"])
 def cloudinary_webhook():
-    # まずボディ（テキストとバイト両方）を取得
-    body_text = request.get_data(as_text=True)  # str
-    body_bytes = body_text.encode("utf-8")      # bytes
+    # まずボディを生のバイト列で取得
+    body_bytes = request.get_data()  # bytes
 
-    # JSON 解析
+    # JSON解析
     try:
         data = request.get_json(force=True)
         print("[DEBUG] Webhook JSON:", data)
@@ -313,26 +312,30 @@ def cloudinary_webhook():
         print("[ERROR] Failed to parse JSON:", e)
         return "Bad JSON", 400
 
-    # 署名チェック
+    # 署名を取得（ここで初めて定義）
     signature = request.headers.get("X-Cld-Signature", "")
+    if not signature:
+        print("[WARNING] No X-Cld-Signature header found")
+        return "Forbidden", 403
+
+    # 署名計算
+    expected_signature = hmac.new(
+        CLOUDINARY_WEBHOOK_SECRET.encode("utf-8"),
+        body_bytes,
+        hashlib.sha1
+    ).hexdigest()
+
+    # デバッグ出力
     print("[DEBUG] X-Cld-Signature header:", signature)
+    print("[DEBUG] Expected signature:", expected_signature)
+    print("[DEBUG] Secret used (first 6 chars):", CLOUDINARY_WEBHOOK_SECRET[:6], "...")
 
-    if CLOUDINARY_WEBHOOK_SECRET:
-        expected_signature = hmac.new(
-            CLOUDINARY_WEBHOOK_SECRET.encode("utf-8"),
-            body_bytes,   # ← UTF-8 エンコードした body
-            hashlib.sha1
-        ).hexdigest()
-        print("[DEBUG] Expected signature:", expected_signature)
+    # 署名照合
+    if not hmac.compare_digest(signature, expected_signature):
+        print("[WARNING] Signature mismatch!")
+        return "Forbidden", 403
 
-        if not hmac.compare_digest(signature, expected_signature):
-            print("[WARNING] Signature mismatch!")
-            print("[DEBUG] Signature (header):", signature)
-            print("[DEBUG] Signature (calc):  ", expected_signature)
-            print("[DEBUG] Secret used:", CLOUDINARY_WEBHOOK_SECRET[:6], "...")
-            return "Forbidden", 403
-
-    # 削除イベントか確認
+    # 削除イベント処理
     if data.get("notification_type") == "delete":
         for resource in data.get("resources", []):
             public_id = resource.get("public_id")
