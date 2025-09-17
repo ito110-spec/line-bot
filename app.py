@@ -321,7 +321,7 @@ def cloudinary_webhook():
         expected_signature = hmac.new(
             CLOUDINARY_WEBHOOK_SECRET.encode(),
             body,
-            hashlib.sha256
+            hashlib.sha1
         ).hexdigest()
         print("[DEBUG] Expected signature:", expected_signature)
         print("[DEBUG] Secret used:", CLOUDINARY_WEBHOOK_SECRET[:6], "...")
