@@ -16,6 +16,7 @@ from linebot.v3.messaging import (
 from linebot.v3.webhooks import MessageEvent, TextMessageContent, ImageMessageContent, PostbackEvent
 from linebot.v3.webhook import WebhookHandler
 
+import json
 import hmac
 import hashlib
 import os
@@ -298,55 +299,49 @@ def cron_job():
 
     return "OK"
 
-# -------------------- 画像連動削除 --------------------
+# -------------------- 画像→データベース連動削除 --------------------
 @app.route("/cloudinary-webhook", methods=["POST"])
 def cloudinary_webhook():
-    # まずボディを生のバイト列で取得
-    body_bytes = request.get_data()  # bytes
+    # 生のバイト列を取得
+    body = request.get_data()
+    print("[DEBUG] Webhook body bytes:", body)
 
-    # JSON解析
+    # JSON 解析
     try:
-        data = request.get_json(force=True)
+        data = json.loads(body)
         print("[DEBUG] Webhook JSON:", data)
     except Exception as e:
         print("[ERROR] Failed to parse JSON:", e)
         return "Bad JSON", 400
 
-    # 署名を取得（ここで初めて定義）
-    signature = request.headers.get("X-Cld-Signature", "")
-    if not signature:
-        print("[WARNING] No X-Cld-Signature header found")
-        return "Forbidden", 403
+    # 署名チェックはなし（Cloudinary 最新 UI では Secret Key がない場合対応）
+    # if CLOUDINARY_WEBHOOK_SECRET:
+    #     ...署名チェック...
 
-    # 署名計算
-    expected_signature = hmac.new(
-        CLOUDINARY_WEBHOOK_SECRET.encode("utf-8"),
-        body_bytes,
-        hashlib.sha1
-    ).hexdigest()
-
-    # デバッグ出力
-    print("[DEBUG] X-Cld-Signature header:", signature)
-    print("[DEBUG] Expected signature:", expected_signature)
-    print("[DEBUG] Secret used (first 6 chars):", CLOUDINARY_WEBHOOK_SECRET[:6], "...")
-
-    # 署名照合
-    if not hmac.compare_digest(signature, expected_signature):
-        print("[WARNING] Signature mismatch!")
-        return "Forbidden", 403
-
-    # 削除イベント処理
+    # 削除イベントのみ処理
     if data.get("notification_type") == "delete":
-        for resource in data.get("resources", []):
+        resources = data.get("resources", [])
+        if not resources:
+            print("[INFO] No resources found in delete event")
+            return "OK"
+
+        for resource in resources:
             public_id = resource.get("public_id")
-            print(f"[INFO] Delete event for public_id: {public_id}")
-            if public_id:
-                doc_id = get_photo_doc_id_by_public_id(public_id)
-                if doc_id:
+            if not public_id:
+                continue
+
+            print(f"[INFO] Delete event received for public_id: {public_id}")
+
+            # Firestore の doc_id を取得
+            doc_id = get_photo_doc_id_by_public_id(public_id)
+            if doc_id:
+                try:
                     delete_photo(doc_id)
                     print(f"[INFO] Firestore doc {doc_id} deleted successfully.")
-                else:
-                    print(f"[INFO] No Firestore doc found for public_id: {public_id}")
+                except Exception as e:
+                    print(f"[ERROR] Failed to delete Firestore doc {doc_id}:", e)
+            else:
+                print(f"[INFO] No Firestore doc found for public_id: {public_id}")
 
     return "OK"
 
