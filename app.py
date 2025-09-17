@@ -36,7 +36,8 @@ from db import (
     get_all_users,
     delete_photo,
     delete_photo_by_number,
-    get_photo_doc_id_by_public_id
+    get_photo_doc_id_by_public_id,
+    get_user_like_counts
 )
 
 # -------------------- 初期化 --------------------
@@ -247,6 +248,9 @@ def cron_job():
     with ApiClient(config) as client:
         messaging_api = MessagingApi(client)
 
+        # ユーザーごとの累計いいね数を先に集計
+        user_like_counts = get_user_like_counts()
+
         users = get_all_users()
         for user_id in users:
 
@@ -276,7 +280,18 @@ def cron_job():
                     messages=[TextMessage(text=photo_theme)]
                 )
             )
-            # 4. ランダム写真
+
+            # 4. あなたの累計いいね数
+            total_likes = user_like_counts.get(user_id, 0)
+            like_text = f"📊 あなたの写真は現在 {total_likes} いいねをもらっています！"
+            messaging_api.push_message_with_http_info(
+                PushMessageRequest(
+                    to=user_id,
+                    messages=[TextMessage(text=like_text)]
+                )
+            )
+
+            # 5. ランダム写真
             photos = get_recent_photos(days=7)
             if photos:
                 p = random.choice(photos)
