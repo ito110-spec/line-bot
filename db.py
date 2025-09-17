@@ -131,6 +131,26 @@ def like_photo(doc_id: str, user_id: str, session_id: str):
 
     return new_likes
 
+# -------------------- ユーザーごとの累計いいね数 --------------------
+def get_user_like_counts():
+    """
+    ユーザーごとに総いいね数を集計して辞書で返す
+    返り値: { user_id: total_likes }
+    """
+    like_counts = {}
+
+    # 全写真を取得して投稿者ごとに likes を合計
+    photos = db.collection("photos").stream()
+    for photo in photos:
+        data = photo.to_dict()
+        user_id = data.get("user_id")
+        likes = data.get("likes", 0)
+
+        if user_id:
+            like_counts[user_id] = like_counts.get(user_id, 0) + likes
+
+    return like_counts
+
 # -------------------- 写真削除 --------------------
 def delete_photo(doc_id: str):
     doc_ref = db.collection("photos").document(doc_id)
@@ -175,3 +195,4 @@ def get_photo_doc_id_by_public_id(public_id: str):
         if url.endswith(public_id) or public_id in url:
             return doc.id
     return None
+
