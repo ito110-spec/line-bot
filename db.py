@@ -33,11 +33,29 @@ def init_db():
     # Firestore は動的作成なので何もしなくてOK
     print("Firestore ready. No DB init required.")
 
+# -------------------- 写真番号カウンタ --------------------
+def get_next_photo_number():
+    """
+    Firestore の metadata/photo_counter から次の番号を発行
+    """
+    counter_ref = db.collection("metadata").document("photo_counter")
+
+    @firestore.transactional
+    def transaction_op(transaction):
+        snapshot = counter_ref.get(transaction=transaction)
+        current = snapshot.to_dict()["count"] if snapshot.exists else 0
+        next_number = current + 1
+        transaction.set(counter_ref, {"count": next_number})
+        return next_number
+
+    transaction = db.transaction()
+    return transaction_op(transaction)
+
 # -------------------- 画像保存 --------------------
 def save_image_from_line(message_id: str, user_id: str):
     """
     LINE から画像を取得して Cloudinary にアップロード
-    Firestore に URL を保存
+    Firestore に URL と連番を保存
     """
     token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
     headers = {"Authorization": f"Bearer {token}"}
@@ -54,16 +72,20 @@ def save_image_from_line(message_id: str, user_id: str):
     )
     image_url = result["secure_url"]
 
+    # ======== 連番を発行 ========
+    photo_number = get_next_photo_number()
+
     # Firestore に保存
     doc_ref = db.collection("photos").document()
     doc_ref.set({
         "user_id": user_id,
         "image_url": image_url,
         "likes": 0,
+        "photo_number": photo_number,   # ← ここが新規追加
         "created_at": datetime.utcnow()
     })
 
-    return image_url, doc_ref.id
+    return image_url, doc_ref.id, photo_number
 
 # -------------------- 過去 N 日の写真取得 --------------------
 def get_recent_photos(days=7):
@@ -144,6 +166,14 @@ def delete_photo(doc_id: str):
         # ======== 4. Firestore の写真ドキュメントを削除 ========
         doc_ref.delete()
 
+def delete_photo_by_number(photo_number: int):
+    """
+    連番で写真を削除する。
+    """
+    query = db.collection("photos").where("photo_number", "==", photo_number).stream()
+    for doc in query:
+        delete_photo(doc.id)
+
 # -------------------- ユーザーIDを保存 --------------------
 def save_user(user_id):
     doc_ref = db.collection("users").document(user_id)
@@ -159,3 +189,15 @@ def save_user(user_id):
 def get_all_users():
     users_ref = db.collection("users").stream()
     return [doc.id for doc in users_ref] # doc.id が user_id
+
+# -------------------- Firestore のドキュメントIDを取得 --------------------
+def get_photo_doc_id_by_public_id(public_id: str):
+    """Cloudinaryのpublic_idからFirestoreのdoc_idを取得"""
+    docs = db.collection("photos").stream()
+    for doc in docs:
+        data = doc.to_dict()
+        # image_url の最後の部分（ファイル名）だけを比較する
+        url = data.get("image_url", "")
+        if url.endswith(public_id) or public_id in url:
+            return doc.id
+    return None
