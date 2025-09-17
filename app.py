@@ -301,8 +301,9 @@ def cron_job():
 # -------------------- 画像連動削除 --------------------
 @app.route("/cloudinary-webhook", methods=["POST"])
 def cloudinary_webhook():
-    # まずボディをログ
+    # まずボディを取得 & ログ
     body = request.get_data()
+    print("[DEBUG] Webhook body bytes:", body)
 
     # JSON 解析
     try:
@@ -311,11 +312,7 @@ def cloudinary_webhook():
     except Exception as e:
         print("[ERROR] Failed to parse JSON:", e)
         return "Bad JSON", 400
-    
-    print("[DEBUG] Received signature:", signature)
-    print("[DEBUG] Expected signature:", expected_signature)
-    print("[DEBUG] Secret used:", CLOUDINARY_WEBHOOK_SECRET[:6], "...")
-    
+
     # 署名チェック
     signature = request.headers.get("X-Cld-Signature", "")
     print("[DEBUG] X-Cld-Signature header:", signature)
@@ -327,10 +324,10 @@ def cloudinary_webhook():
             hashlib.sha256
         ).hexdigest()
         print("[DEBUG] Expected signature:", expected_signature)
+        print("[DEBUG] Secret used:", CLOUDINARY_WEBHOOK_SECRET[:6], "...")
 
         if not hmac.compare_digest(signature, expected_signature):
             print("[WARNING] Signature mismatch!")
-            # 処理は止める
             return "Forbidden", 403
 
     # 削除イベントか確認
@@ -345,7 +342,6 @@ def cloudinary_webhook():
                     print(f"[INFO] Firestore doc {doc_id} deleted successfully.")
                 else:
                     print(f"[INFO] No Firestore doc found for public_id: {public_id}")
-
 
     return "OK"
 
