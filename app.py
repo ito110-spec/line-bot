@@ -311,7 +311,11 @@ def cloudinary_webhook():
     except Exception as e:
         print("[ERROR] Failed to parse JSON:", e)
         return "Bad JSON", 400
-
+    
+    print("[DEBUG] Received signature:", signature)
+    print("[DEBUG] Expected signature:", expected_signature)
+    print("[DEBUG] Secret used:", CLOUDINARY_WEBHOOK_SECRET[:6], "...")
+    
     # 署名チェック
     signature = request.headers.get("X-Cld-Signature", "")
     print("[DEBUG] X-Cld-Signature header:", signature)
