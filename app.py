@@ -78,7 +78,7 @@ def handle_message(event):
                     reply_messages = [TextMessage(text="⚠️ 削除に失敗しました。番号を確認してください。")]
 
              # -------------------- 既存の処理（占いなど） --------------------
-            if user_msg in ["今日の占い", "うらない", "占い"]:
+            elif user_msg in ["今日の占い", "うらない", "占い"]:
                 result = get_fortune(user_id)
                 reply_messages = [TextMessage(text=result)]
 
