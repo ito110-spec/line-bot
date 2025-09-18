@@ -247,70 +247,80 @@ def callback():
 def cron_job():
     with ApiClient(config) as client:
         messaging_api = MessagingApi(client)
-
-        # ユーザーごとの累計いいね数を先に集計
+        users = get_all_users()
         user_like_counts = get_user_like_counts()
 
-        users = get_all_users()
         for user_id in users:
-
-            # 1. 占い
-            fortune = get_fortune(user_id)
-            messaging_api.push_message_with_http_info(
-                PushMessageRequest(
-                    to=user_id,
-                    messages=[TextMessage(text=f"{fortune}")]
-                )
-            )
-
-            # 2. 猫
-            cat_url, preview = get_cat_video_url()
-            messaging_api.push_message_with_http_info(
-                PushMessageRequest(
-                    to=user_id,
-                    messages=[VideoMessage(original_content_url=cat_url, preview_image_url=preview)]
-                )
-            )
-
-            # 3. 写真お題（フリー文字列）
-            photo_theme = "今月のお題：\n#飯テロ\n#動物\n#青 \nを撮ってみよう📸"
-            messaging_api.push_message_with_http_info(
-                PushMessageRequest(
-                    to=user_id,
-                    messages=[TextMessage(text=photo_theme)]
-                )
-            )
-
-            # 4. あなたの累計いいね数
-            total_likes = user_like_counts.get(user_id, 0)
-            like_text = f"📊 あなたの写真は現在 {total_likes} いいねをもらっています！"
-            messaging_api.push_message_with_http_info(
-                PushMessageRequest(
-                    to=user_id,
-                    messages=[TextMessage(text=like_text)]
-                )
-            )
-
-            # 5. ランダム写真
-            photos = get_recent_photos(days=7)
-            if photos:
-                p = random.choice(photos)
-                image_msg = ImageMessage(
-                    original_content_url=p["image_url"],
-                    preview_image_url=p["image_url"],
-                    quick_reply=QuickReply(
-                        items=[QuickReplyItem(action=PostbackAction(
-                            label="👍 いいね",
-                            data=f"like_photo:{p['id']}"
-                        ))]
-                    )
-                )
+            try:
+                # 1. 占い
+                fortune = get_fortune(user_id)
                 messaging_api.push_message_with_http_info(
-                    PushMessageRequest(
-                        to=user_id,
-                        messages=[image_msg]
-                    )
+                    PushMessageRequest(to=user_id, messages=[TextMessage(text=fortune)])
                 )
+
+                # 2. 猫（失敗しても続行）
+                try:
+                    cat_url, preview = get_cat_video_url()
+                    messaging_api.push_message_with_http_info(
+                        PushMessageRequest(
+                            to=user_id,
+                            messages=[
+                                VideoMessage(
+                                    original_content_url=cat_url,
+                                    preview_image_url=preview
+                                )
+                            ]
+                        )
+                    )
+                except Exception as e:
+                    print(f"[WARN] 猫動画取得失敗 for {user_id}: {e}")
+                    # 代わりにテキストを送る
+                    messaging_api.push_message_with_http_info(
+                        PushMessageRequest(
+                            to=user_id,
+                            messages=[TextMessage(text="🐱 猫動画の取得に失敗しました…また今度！")]
+                        )
+                    )
+
+                # 3. 写真お題
+                photo_theme = "今月のお題：\n#飯テロ\n#動物\n#青 \nを撮ってみよう📸"
+                messaging_api.push_message_with_http_info(
+                    PushMessageRequest(to=user_id, messages=[TextMessage(text=photo_theme)])
+                )
+
+                # 4. 累計いいね数
+                total_likes = user_like_counts.get(user_id, 0)
+                like_text = f"📊 あなたの写真は現在 {total_likes} いいねをもらっています！"
+                messaging_api.push_message_with_http_info(
+                    PushMessageRequest(to=user_id, messages=[TextMessage(text=like_text)])
+                )
+
+                # 5. ランダム写真
+                photos = get_recent_photos(days=7)
+                if photos:
+                    p = random.choice(photos)
+                    image_msg = ImageMessage(
+                        original_content_url=p["image_url"],
+                        preview_image_url=p["image_url"],
+                        quick_reply=QuickReply(
+                            items=[
+                                QuickReplyItem(
+                                    action=PostbackAction(
+                                        label="👍 いいね",
+                                        data=f"like_photo:{p['id']}"
+                                    )
+                                )
+                            ]
+                        )
+                    )
+                    messaging_api.push_message_with_http_info(
+                        PushMessageRequest(to=user_id, messages=[image_msg])
+                    )
+
+            except Exception as e:
+                print(f"[ERROR] cron_job failed for user {user_id}: {e}")
+                import traceback
+                traceback.print_exc()
 
     return "OK"
 
