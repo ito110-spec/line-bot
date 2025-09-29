@@ -1,53 +1,38 @@
 # ===============================
 # GitHub Actions ワークフロー
-# Render アプリを定期的に ping してスリープを防ぐ
-# ただし JST 01:30〜08:30 は ping を止める
+# Render アプリを指定時間にランダム ping して起動させる
+# 毎日 8:30, 12:00, 18:00 ±10分ランダム
 # ===============================
 
-name: Keep Render Awake
+name: Scheduled Random Ping to Render
 
 on:
   schedule:
-    # GitHub Actions の cron は UTC 基準
-    # 5分ごとに実行
-    - cron: "*/5 * * * *"
+    # JST指定時間 → UTC変換済み
+    - cron: "30 23 * * *" # JST 8:30
+    - cron: "30 03 * * *" # JST 12:00
+    - cron: "30 09 * * *" # JST 18:00
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Check JST time and ping if allowed
+      - name: Random delay and ping
         run: |
-          # -----------------------------
-          # 現在時刻を JST(日本時間) で取得
-          # -----------------------------
-          NOW_JST_H=$(TZ=Asia/Tokyo date +"%H")   # 時 (00〜23)
-          NOW_JST_M=$(TZ=Asia/Tokyo date +"%M")   # 分 (00〜59)
+          echo "🚀 Render Scheduled Ping"
 
-          # 分単位に変換（例: 01:45 → 105）
-          NOW_JST=$((10#$NOW_JST_H * 60 + 10#$NOW_JST_M))
+          # ±10分ランダム遅延（600秒）
+          OFFSET=$(( RANDOM % 1200 - 600 )) # -600〜+599秒
+          echo "⏳ Waiting $OFFSET seconds before ping..."
+          sleep $OFFSET
 
-          echo "⏰ 現在の JST: ${NOW_JST_H}:${NOW_JST_M} (${NOW_JST}分)"
+          # JST 現在時刻（デバッグ用）
+          NOW_JST_H=$(TZ=Asia/Tokyo date +"%H")
+          NOW_JST_M=$(TZ=Asia/Tokyo date +"%M")
+          echo "⏰ 現在の JST: ${NOW_JST_H}:${NOW_JST_M}"
 
-          # -----------------------------
-          # スリープさせたい時間帯を設定
-          # -----------------------------
-          START=$((1 * 60 + 30))   # 01:30 = 90分
-          END=$((8 * 60 + 30))     # 08:30 = 510分
-
-          # -----------------------------
-          # 時間判定
-          # -----------------------------
-          if [ "$NOW_JST" -ge $START ] && [ "$NOW_JST" -lt $END ]; then
-            echo "⏸ 今はメンテナンス時間 (01:30〜08:30 JST)。ping しません。"
-            exit 0
-          fi
-
-          # -----------------------------
-          # スリープ時間外なら ping 実行
-          # -----------------------------
+          # Render 健康チェックエンドポイントに ping
           TARGET_URL="https://line-bot-1-rsyx.onrender.com/health"
+          echo "✅ Pinging $TARGET_URL"
 
-          echo "✅ Ping 実行: $TARGET_URL"
-          # Cold Start に備えてタイムアウト長め
-          curl -fsS --max-time 30 "$TARGET_URL" || echo "⚠️ Ping failed"
+          curl --retry 5 --retry-delay 5 -fsS --max-time 30 "$TARGET_URL" || echo "⚠️ Ping failed"
