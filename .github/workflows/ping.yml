@@ -8,10 +8,10 @@ name: Scheduled Random Ping to Render
 
 on:
   schedule:
-    # JST指定時間 → UTC変換済み
+    # JST指定時間 → UTC変換済み (GitHub ActionsはUTC基準)
     - cron: "30 23 * * *" # JST 8:30
-    - cron: "30 03 * * *" # JST 12:00
-    - cron: "30 09 * * *" # JST 18:00
+    - cron: "00 03 * * *" # JST 12:00
+    - cron: "00 09 * * *" # JST 18:00
 
 jobs:
   ping:
@@ -21,12 +21,19 @@ jobs:
         run: |
           echo "🚀 Render Scheduled Ping"
 
-          # ±10分ランダム遅延（600秒）
-          OFFSET=$(( RANDOM % 1200 - 600 )) # -600〜+599秒
-          echo "⏳ Waiting $OFFSET seconds before ping..."
-          sleep $OFFSET
+          # ランダム遅延を生成
+          # -600〜+599秒の範囲で生成（±10分ランダム）
+          OFFSET=$(( RANDOM % 1200 - 600 ))
 
-          # JST 現在時刻（デバッグ用）
+          # sleepは負数を受け付けないので、条件分岐
+          if [ $OFFSET -gt 0 ]; then
+            echo "⏳ Waiting $OFFSET seconds before ping..."
+            sleep $OFFSET
+          else
+            echo "⏭️ Skipping wait (negative offset: $OFFSET 秒)"
+          fi
+
+          # JST 現在時刻を出力（デバッグ用）
           NOW_JST_H=$(TZ=Asia/Tokyo date +"%H")
           NOW_JST_M=$(TZ=Asia/Tokyo date +"%M")
           echo "⏰ 現在の JST: ${NOW_JST_H}:${NOW_JST_M}"
@@ -35,4 +42,6 @@ jobs:
           TARGET_URL="https://line-bot-1-rsyx.onrender.com/health"
           echo "✅ Pinging $TARGET_URL"
 
-          curl --retry 5 --retry-delay 5 -fsS --max-time 30 "$TARGET_URL" || echo "⚠️ Ping failed"
+          # curl: 最大30秒待機、失敗したら最大5回リトライ
+          curl --retry 5 --retry-delay 5 -fsS --max-time 30 "$TARGET_URL" \
+            || echo "⚠️ Ping failed"
