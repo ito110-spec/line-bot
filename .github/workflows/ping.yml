@@ -1,9 +1,9 @@
 # =============================== 
 # GitHub Actions ワークフロー
-# Render アプリを指定時間にランダム ping → 5分後に再度 ping
+# Render アプリを指定時間にランダムでヘルスチェック → 5分後に再度ヘルスチェック
 # ===============================
 
-name: Scheduled Random Ping to Render
+name: Scheduled Health Check to Render
 
 on:
   schedule:
@@ -11,21 +11,21 @@ on:
     - cron: "30 23 * * *" # JST 8:30
     - cron: "00 03 * * *" # JST 12:00
     - cron: "00 09 * * *" # JST 18:00
-    - cron: "30 15 * * *"
+    - cron: "40 15 * * *" # JST 0:30
   
 jobs:
-  ping:
+  health_check:
     runs-on: ubuntu-latest
     steps:
-      - name: Random delay and double ping
+      - name: Random delay and double health check
         run: |
-          echo "🚀 Render Scheduled Ping"
+          echo "🚀 Render Scheduled Health Check"
 
           # ランダム遅延を生成（±10分）
           OFFSET=$(( RANDOM % 1200 - 600 ))
 
           if [ $OFFSET -gt 0 ]; then
-            echo "⏳ Waiting $OFFSET seconds before first ping..."
+            echo "⏳ Waiting $OFFSET seconds before first health check..."
             sleep $OFFSET
           else
             echo "⏭️ Skipping wait (negative offset: $OFFSET 秒)"
@@ -38,18 +38,18 @@ jobs:
 
           TARGET_URL="https://line-bot-1-rsyx.onrender.com/health"
 
-          # --- 1回目の ping ---
-          echo "✅ First ping to $TARGET_URL"
+          # --- 1回目のヘルスチェック ---
+          echo "✅ First health check to $TARGET_URL"
           curl --retry 5 --retry-delay 5 -fsS --max-time 30 "$TARGET_URL" \
-            || echo "⚠️ First ping failed"
+            || echo "⚠️ First health check failed"
 
           # --- 5分待機 ---
-          echo "⏳ Waiting 300 seconds (5 minutes) before second ping..."
+          echo "⏳ Waiting 300 seconds (5 minutes) before second health check..."
           sleep 300
 
-          # --- 2回目の ping ---
-          echo "✅ Second ping to $TARGET_URL"
+          # --- 2回目のヘルスチェック ---
+          echo "✅ Second health check to $TARGET_URL"
           curl --retry 5 --retry-delay 5 -fsS --max-time 30 "$TARGET_URL" \
-            || echo "⚠️ Second ping failed"
+            || echo "⚠️ Second health check failed"
 
-          echo "✅ Both pings completed"
+          echo "✅ Both health checks completed"
