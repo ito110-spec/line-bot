@@ -1,33 +1,31 @@
-# ===============================
+# =============================== 
 # GitHub Actions ワークフロー
-# Render アプリを指定時間にランダム ping して起動させる
-# 毎日 8:30, 12:00, 18:00 ±10分ランダム
+# Render アプリを指定時間にランダム ping → 5分後に再度 ping
 # ===============================
 
 name: Scheduled Random Ping to Render
 
 on:
   schedule:
-    # JST指定時間 → UTC変換済み (GitHub ActionsはUTC基準)
+    # JST指定時間 → UTC変換済み
     - cron: "30 23 * * *" # JST 8:30
     - cron: "00 03 * * *" # JST 12:00
     - cron: "00 09 * * *" # JST 18:00
-
+    - cron: "30 15 * * *"
+  
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Random delay and ping
+      - name: Random delay and double ping
         run: |
           echo "🚀 Render Scheduled Ping"
 
-          # ランダム遅延を生成
-          # -600〜+599秒の範囲で生成（±10分ランダム）
+          # ランダム遅延を生成（±10分）
           OFFSET=$(( RANDOM % 1200 - 600 ))
 
-          # sleepは負数を受け付けないので、条件分岐
           if [ $OFFSET -gt 0 ]; then
-            echo "⏳ Waiting $OFFSET seconds before ping..."
+            echo "⏳ Waiting $OFFSET seconds before first ping..."
             sleep $OFFSET
           else
             echo "⏭️ Skipping wait (negative offset: $OFFSET 秒)"
@@ -38,10 +36,20 @@ jobs:
           NOW_JST_M=$(TZ=Asia/Tokyo date +"%M")
           echo "⏰ 現在の JST: ${NOW_JST_H}:${NOW_JST_M}"
 
-          # Render 健康チェックエンドポイントに ping
           TARGET_URL="https://line-bot-1-rsyx.onrender.com/health"
-          echo "✅ Pinging $TARGET_URL"
 
-          # curl: 最大30秒待機、失敗したら最大5回リトライ
+          # --- 1回目の ping ---
+          echo "✅ First ping to $TARGET_URL"
           curl --retry 5 --retry-delay 5 -fsS --max-time 30 "$TARGET_URL" \
-            || echo "⚠️ Ping failed"
+            || echo "⚠️ First ping failed"
+
+          # --- 5分待機 ---
+          echo "⏳ Waiting 300 seconds (5 minutes) before second ping..."
+          sleep 300
+
+          # --- 2回目の ping ---
+          echo "✅ Second ping to $TARGET_URL"
+          curl --retry 5 --retry-delay 5 -fsS --max-time 30 "$TARGET_URL" \
+            || echo "⚠️ Second ping failed"
+
+          echo "✅ Both pings completed"
