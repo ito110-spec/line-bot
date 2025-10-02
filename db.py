@@ -195,4 +195,11 @@ def get_photo_doc_id_by_public_id(public_id: str):
         if url.endswith(public_id) or public_id in url:
             return doc.id
     return None
-
+# -------------------- Firebaseの全画像取得 --------------------
+def get_all_photo_docs():
+    docs = []
+    for doc in db.collection("photos").stream():
+        data = doc.to_dict()
+        data["id"] = doc.id
+        docs.append(data)
+    return docs
