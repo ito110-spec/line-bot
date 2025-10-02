@@ -1,29 +1,41 @@
 # ===============================
 # GitHub Actions ワークフロー
-# Render の cron エンドポイントを定期的に ping する（テスト用）
+# 毎朝 08:45 JST に Render の /cron を実行し、
+# 5分後に再実行する
 # ===============================
 
-name: Ping Render Cron Endpoint (Test)  # ワークフロー名
+name: Morning Cron Ping
 
 on:
   schedule:
-    # GitHub Actions cron は UTC 基準
-    # 曜日指定なしで毎日実行
-    # JST 22:35 → UTC 13:35
+    # JST 08:45 → UTC 23:45 前日
     # 書式: 分 時 日 月 曜日
-    - cron: "42 23 * * *"
+    - cron: "45 23 * * *"  # 毎日 JST 08:45
 
 jobs:
-  cron:
-    runs-on: ubuntu-latest  # GitHub の Ubuntu 環境で実行
+  morning-cron:
+    runs-on: ubuntu-latest
     steps:
-      - name: Ping Render cron endpoint
+      - name: Ping Render /cron endpoint (1回目)
         run: |
-          # Render 上で用意した cron 用エンドポイントにアクセス
+          # Render 健康チェック用 URL
           TARGET_URL="https://line-bot-1-rsyx.onrender.com/cron"
           
-          echo "⏳ Pinging $TARGET_URL ..."
-          # タイムアウト 10秒で curl 実行。失敗しても workflow は止まらない
-          curl -fsS --max-time 10 "$TARGET_URL" || echo "⚠️ Ping failed"
+          echo "⏳ First ping to $TARGET_URL (08:45 JST)..."
+          curl -fsS --max-time 10 "$TARGET_URL" || echo "⚠️ First ping failed"
+
+      - name: Wait 5 minutes before second ping
+        run: |
+          echo "⏳ Waiting 300 seconds (5 minutes) before second ping..."
+          sleep 300
+
+      - name: Ping Render /cron endpoint (2回目)
+        run: |
+          TARGET_URL="https://line-bot-1-rsyx.onrender.com/cron"
           
-          echo "✅ Ping completed"
+          echo "⏳ Second ping to $TARGET_URL (08:50 JST)..."
+          curl -fsS --max-time 10 "$TARGET_URL" || echo "⚠️ Second ping failed"
+
+      - name: Complete
+        run: |
+          echo "✅ Morning cron pings completed"
