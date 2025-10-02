@@ -37,7 +37,8 @@ from db import (
     delete_photo,
     delete_photo_by_number,
     get_photo_doc_id_by_public_id,
-    get_user_like_counts
+    get_user_like_counts,
+    get_all_photo_docs
 )
 
 # -------------------- 初期化 --------------------
@@ -371,10 +372,45 @@ def cloudinary_webhook():
     return "OK"
 
 
-# -------------------- ヘルスチェック --------------------
+# -------------------- ヘルスチェック（Cloudinary と Firebase 突合削除） --------------------
 @app.route("/health", methods=["GET"])
 def health():
-    return "OK", 200
+    try:
+        print("[HEALTH] Starting health check and cleanup...")
+
+        # --- Cloudinary API から画像一覧取得 ---
+        import cloudinary.api
+        cloudinary_resources = cloudinary.api.resources(
+            type="upload",
+            max_results=500  # 必要ならページネーション対応
+        )
+        cloudinary_public_ids = {res['public_id'] for res in cloudinary_resources.get('resources', [])}
+        print(f"[HEALTH] Cloudinary public IDs count: {len(cloudinary_public_ids)}")
+
+        # --- Firebase から画像一覧取得 ---
+        from db import get_all_photo_docs
+        photo_docs = get_all_photo_docs()  # Firestore の全写真データ取得
+        deleted_docs = []
+
+        for doc in photo_docs:
+            public_id = doc.get("public_id")
+            doc_id = doc.get("id")
+            if public_id and public_id not in cloudinary_public_ids:
+                # Cloudinaryに存在しない場合は削除
+                from db import delete_photo
+                delete_photo(doc_id)
+                deleted_docs.append(doc_id)
+                print(f"[HEALTH] Deleted Firestore doc: {doc_id}")
+
+        print(f"[HEALTH] Deleted {len(deleted_docs)} Firestore docs.")
+
+        return f"OK — Deleted {len(deleted_docs)} docs", 200
+
+    except Exception as e:
+        print(f"[ERROR] Health check failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return "Error", 500
 # -------------------- 起動 --------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
