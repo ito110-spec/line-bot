@@ -4,7 +4,7 @@ import os
 import subprocess
 from PIL import Image
 
-CAT_TMP_DIR = "static/cat_videos"
+CAT_TMP_DIR = "/tmp/cat_videos"
 TMP_FRAMES_DIR = os.path.join(CAT_TMP_DIR, "tmp_frames")
 os.makedirs(TMP_FRAMES_DIR, exist_ok=True)
 
