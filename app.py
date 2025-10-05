@@ -243,11 +243,19 @@ def callback():
 
     return 'OK'
 
+
 # -------------------- tmpアクセス機能 --------------------
 @app.route("/tmp/<path:filename>")
 def serve_tmp(filename):
     """ /tmp の中身をブラウザ経由でアクセス可能にする """
-    return send_from_directory("/tmp/cat_videos", filename)
+    tmp_dir = "/tmp/cat_videos"
+    file_path = os.path.join(tmp_dir, filename)
+
+    # セキュリティ・存在チェック
+    if not os.path.isfile(file_path):
+        return "File not found", 404
+
+    return send_from_directory(tmp_dir, filename)
 
 # -------------------- 毎朝機能 --------------------
 @app.route("/cron", methods=["GET"])
