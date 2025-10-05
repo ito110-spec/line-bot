@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, request, abort
+from flask import Flask, request, abort, send_from_directory
 from linebot.v3.messaging import (
     MessagingApi,
     Configuration,
@@ -242,6 +242,12 @@ def callback():
         abort(400)
 
     return 'OK'
+
+# -------------------- tmpアクセス機能 --------------------
+@app.route("/tmp/<path:filename>")
+def serve_tmp(filename):
+    """ /tmp の中身をブラウザ経由でアクセス可能にする """
+    return send_from_directory("/tmp/cat_videos", filename)
 
 # -------------------- 毎朝機能 --------------------
 @app.route("/cron", methods=["GET"])
