@@ -3,46 +3,48 @@ import requests
 import os
 import subprocess
 from PIL import Image
+from flask import send_from_directory
 
-CAT_TMP_DIR = "static/cat_videos"
-TMP_FRAMES_DIR = os.path.join(CAT_TMP_DIR, "tmp_frames")
-os.makedirs(TMP_FRAMES_DIR, exist_ok=True)
+# Flask アプリのルート側でこれを import して使う
+TMP_DIR = "/tmp/cat_videos"
+os.makedirs(TMP_DIR, exist_ok=True)
 
-BASE_URL = "https://line-bot-1-rsyx.onrender.com"  # ←自分の render URL に置き換える
+BASE_URL = "https://line-bot-1-rsyx.onrender.com"  # あなたの Render URL に変更
 
 def get_cat_video_url(max_seconds=15):
-    gif_url = f"https://cataas.com/cat/gif?{int(time.time())}"
-    gif_path = os.path.join(CAT_TMP_DIR, "cat.gif")
-    mp4_path = os.path.join(CAT_TMP_DIR, "cat.mp4")
-    preview_path = os.path.join(CAT_TMP_DIR, "preview.png")
+    timestamp = int(time.time())
+    gif_path = os.path.join(TMP_DIR, f"cat_{timestamp}.gif")
+    mp4_path = os.path.join(TMP_DIR, f"cat_{timestamp}.mp4")
+    preview_path = os.path.join(TMP_DIR, f"preview_{timestamp}.png")
 
-    # GIF ダウンロード
-    r = requests.get(gif_url)
+    # --- 1. GIF ダウンロード ---
+    gif_url = f"https://cataas.com/cat/gif?{timestamp}"
+    r = requests.get(gif_url, timeout=10)
     r.raise_for_status()
     with open(gif_path, "wb") as f:
         f.write(r.content)
 
-    # プレビュー画像
+    # --- 2. プレビュー画像生成 ---
     im = Image.open(gif_path)
     im.seek(0)
     im.save(preview_path)
 
-    mp4_path_abs = os.path.abspath(mp4_path).replace("\\", "/")
-
-    # FFmpeg で GIF → MP4（3回ループ + 無音トラック + 正方形パディング）
+    # --- 3. GIF → MP4 変換 ---
     subprocess.run([
         "ffmpeg", "-y",
-        "-stream_loop", "2",        # GIFを3回ループ（元GIF1回 + 2回ループ）
-        "-i", gif_path,             # 入力GIF
-        "-vf", "scale='min(480,iw)':-2,pad=480:480:(480-iw)/2:(480-ih)/2",  # 正方形パディング
+        "-stream_loop", "2",
+        "-i", gif_path,
+        "-vf", "scale='min(480,iw)':-2,pad=480:480:(480-iw)/2:(480-ih)/2",
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
         "-movflags", "+faststart",
-        mp4_path_abs
+        mp4_path
     ], check=True)
 
+    # --- 4. Flask 経由で配信できるURLを返す ---
+    mp4_filename = os.path.basename(mp4_path)
+    preview_filename = os.path.basename(preview_path)
 
-    mp4_url = f"{BASE_URL}/static/cat_videos/cat.mp4"
-    preview_url = f"{BASE_URL}/static/cat_videos/preview.png"
+    mp4_url = f"{BASE_URL}/tmp/{mp4_filename}"
+    preview_url = f"{BASE_URL}/tmp/{preview_filename}"
     return mp4_url, preview_url
-
