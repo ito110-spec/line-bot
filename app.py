@@ -267,50 +267,22 @@ def cron_job():
 
         for user_id in users:
             try:
-                # 1. 占い
+                # --- 1通目：占い＋お題＋いいね数まとめ ---
                 fortune = get_fortune(user_id)
-                messaging_api.push_message_with_http_info(
-                    PushMessageRequest(to=user_id, messages=[TextMessage(text=fortune)])
-                )
-
-                # 2. 猫（失敗しても続行）
-                try:
-                    cat_url, preview = get_cat_video_url()
-                    messaging_api.push_message_with_http_info(
-                        PushMessageRequest(
-                            to=user_id,
-                            messages=[
-                                VideoMessage(
-                                    original_content_url=cat_url,
-                                    preview_image_url=preview
-                                )
-                            ]
-                        )
-                    )
-                except Exception as e:
-                    print(f"[WARN] 猫動画取得失敗 for {user_id}: {e}")
-                    # 代わりにテキストを送る
-                    messaging_api.push_message_with_http_info(
-                        PushMessageRequest(
-                            to=user_id,
-                            messages=[TextMessage(text="🐱 猫動画の取得に失敗しました…また今度！")]
-                        )
-                    )
-
-                # 3. 写真お題
-                photo_theme = "今月のお題：\n#飯テロ\n#動物\n#青 \nを撮ってみよう📸"
-                messaging_api.push_message_with_http_info(
-                    PushMessageRequest(to=user_id, messages=[TextMessage(text=photo_theme)])
-                )
-
-                # 4. 累計いいね数
                 total_likes = user_like_counts.get(user_id, 0)
-                like_text = f"📊 あなたの写真は現在 {total_likes} いいねをもらっています！"
-                messaging_api.push_message_with_http_info(
-                    PushMessageRequest(to=user_id, messages=[TextMessage(text=like_text)])
+                photo_theme = "#飯テロ #動物 #青"
+
+                text = (
+                    f"{fortune}\n\n"
+                    f"📸 今月のお題：{photo_theme}\n"
+                    f"📊 累計いいね：{total_likes}"
                 )
 
-                # 5. ランダム写真
+                messaging_api.push_message_with_http_info(
+                    PushMessageRequest(to=user_id, messages=[TextMessage(text=text)])
+                )
+
+                # --- 2通目：ランダム写真（必ず送信） ---
                 photos = get_recent_photos(days=30)
                 if photos:
                     p = random.choice(photos)
@@ -338,7 +310,6 @@ def cron_job():
                 traceback.print_exc()
 
     return "OK"
-
 # -------------------- 画像→データベース連動削除 --------------------
 @app.route("/cloudinary-webhook", methods=["POST"])
 def cloudinary_webhook():
