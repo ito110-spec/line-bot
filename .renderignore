@@ -1,0 +1,8 @@
+# Python / Flask / FastAPI など用
+venv
+__pycache__
+.cache
+build
+dist
+*.log
+*.sqlite3
