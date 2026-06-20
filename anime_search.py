@@ -7,7 +7,7 @@ import re
 from fugashi import Tagger
 
 # Gemini APIキー（環境変数から取得）
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY2")
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Tagger 初期化（unidic-lite を利用）
