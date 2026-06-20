@@ -22,7 +22,7 @@ except Exception as e:
 
 def query_gemini_flash(prompt, attempts=2):
     # モデル指定
-    GEMINI_MODEL = "gemini-2.5-flash"
+    GEMINI_MODEL = "gemini-3.5-flash"
 
     if not GEMINI_API_KEY:
         print("[DEBUG] GEMINI_API_KEY が見つかりません。環境変数を確認してください。")
