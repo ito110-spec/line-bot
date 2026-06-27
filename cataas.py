@@ -9,7 +9,7 @@ from flask import send_from_directory
 TMP_DIR = "/tmp/cat_videos"
 os.makedirs(TMP_DIR, exist_ok=True)
 
-BASE_URL = "https://line-bot-1-rsyx.onrender.com"  # あなたの Render URL に変更
+BASE_URL = "https://line-bot-1-rsyx.onrender.com"
 
 def get_cat_video_url(max_seconds=15):
     timestamp = int(time.time())
