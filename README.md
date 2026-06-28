@@ -13,6 +13,10 @@ LINE Messaging APIやGemini APIとの連携、画像処理、データベース�
 
 ```text
 .
+├── .github/
+│   └── workflows/
+│       └── morning_routine.yml
+│       └── ping.yml
 ├── app.py
 ├── fortune.py
 ├── trend.py
@@ -69,8 +73,13 @@ Flask（Render）
 
 ### 流行検索機能
 
-Google Trends APIを利用し、検索キーワードの関連ワードや急上昇ワードを取得する機能を実装しました。
-検索結果を分析し、関連キーワードを優先度順に表示するロジックを実装しています。
+- Google Trends APIを利用し、検索キーワードの関連ワードや急上昇ワードを取得する機能を実装しました。
+- 検索結果を分析し、関連キーワードを優先度順に表示するロジックを実装しています。
+
+### サービス維持（Renderスリープ対策）
+
+- Render無料プランのスリープ対策として、GitHub Actionsから定期的にエンドポイントへPingを送るワークフローを実装しました。
+- 現在は検証・運用設計の一環として構成のみ保持しています。
 
 ---
 
