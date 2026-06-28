@@ -103,7 +103,7 @@ def save_image_from_line(message_id: str, user_id: str):
     return image_url, doc_ref.id, photo_number
 
 # -------------------- 過去 N 日の写真取得 --------------------
-def get_recent_photos(days=21):
+def get_recent_photos(days=28):
     one_week_ago = datetime.utcnow() - timedelta(days=days)
     docs = db.collection("photos").where("created_at", ">=", one_week_ago).stream()
     return [doc.to_dict() | {"id": doc.id} for doc in docs]
