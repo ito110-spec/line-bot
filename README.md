@@ -63,8 +63,9 @@ Flask（Render）
 
 ### 猫GIF機能
 
-* 猫GIFを動画へ変換して送信
-* LINE上で自動再生される形式に対応
+- CATAAS（Cat as a Service）からランダム猫GIFを取得
+- GIFをMP4形式に変換し、LINE上で自動再生可能な形式で送信
+- ffmpegを利用して動画変換・アスペクト比調整を実装
 
 ### Gemini API連携
 
@@ -136,7 +137,7 @@ Flask（Render）
 
 * LINE Messaging API
 * Gemini API
-* CATAAS API
+* CATAAS（Cat as a Service）
 * Google Trends API（pytrends）
 
 ### データベース
