@@ -29,31 +29,30 @@ LINE Messaging APIやGemini APIとの連携、画像処理、データベース�
 ├── .renderignore
 └── .dockerignore
 ```
+
 ## サービス構成図
+
+```
 LINE
-  ↓
+↓
 LINE Messaging API
-  ↓
+↓
 Flask（Render）
-  ↓
-┌──────────────────────────────┐
-│        アプリケーション層      │
-│                              │
-│  ・占い機能                   │
-│  ・画像共有機能               │
-│  ・猫GIF機能                 │
-│  ・アニメ検索（Gemini）       │
-│  ・流行検索（Google Trends） │
-└──────────────────────────────┘
-  ↓
-┌──────────────────────────────┐
-│        外部サービス層          │
-│                              │
-│  Gemini API                  │
-│  Firebase Firestore (DB)     │
-│  Cloudinary (画像保存)       │
-│  CATAAS（猫GIF取得）         │
-└──────────────────────────────┘
+↓
+アプリケーション層
+- 占い機能
+- 画像共有機能
+- 猫GIF機能
+- アニメ検索（Gemini）
+- 流行検索（Google Trends）
+
+↓
+外部サービス層
+- Gemini API
+- Firebase Firestore（DB）
+- Cloudinary（画像保存）
+- CATAAS（猫GIF取得）
+```
 
 ## 主な機能
 
