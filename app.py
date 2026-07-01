@@ -270,7 +270,6 @@ def cron_job():
     print("=" * 50)
 
     with ApiClient(config) as client:
-    with ApiClient(config) as client:
         messaging_api = MessagingApi(client)
         users = get_all_users()
         user_like_counts = get_user_like_counts()
