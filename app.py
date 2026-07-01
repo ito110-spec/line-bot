@@ -260,6 +260,15 @@ def serve_tmp(filename):
 # -------------------- 毎朝機能 --------------------
 @app.route("/cron", methods=["GET"])
 def cron_job():
+    print("=" * 50)
+    print("CRON START")
+    print("Time:", datetime.utcnow())
+    print("User-Agent:", request.headers.get("User-Agent"))
+    print("Remote Addr:", request.remote_addr)
+    print("X-Forwarded-For:", request.headers.get("X-Forwarded-For"))
+    print("=" * 50)
+
+    with ApiClient(config) as client:
     with ApiClient(config) as client:
         messaging_api = MessagingApi(client)
         users = get_all_users()
