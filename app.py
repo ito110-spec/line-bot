@@ -122,7 +122,7 @@ def handle_message(event):
                     reply_messages = [TextMessage(text="ごめん、猫動画の取得に失敗したよ…")]
 
             elif user_msg == "ランダム写真":
-                photos = get_recent_photos(days=30)
+                photos = get_recent_photos(days=180)
                 if not photos:
                     reply_messages = [TextMessage(text="まだ写真は保存されていません。")]
                 else:
