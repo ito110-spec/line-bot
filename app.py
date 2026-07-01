@@ -261,6 +261,7 @@ def serve_tmp(filename):
 @app.route("/cron", methods=["GET"])
 def cron_job():
     print("=" * 50)
+    print("PID:", os.getpid())
     print("CRON START")
     print("Time:", datetime.utcnow())
     print("User-Agent:", request.headers.get("User-Agent"))
