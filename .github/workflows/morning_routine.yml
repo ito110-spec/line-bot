@@ -8,8 +8,9 @@ name: Morning Cron Ping (Random + Twice)
 
 on:
   schedule:
-    # JST 08:00 = UTC 23:00 前日
-    - cron: "0 23 * * 1-5"
+    # 日本時間 月〜金 08:00
+    - cron: "0 8 * * 1-5"
+      timezone: "Asia/Tokyo"
   workflow_dispatch:  # 手動実行も可能
 
 jobs:
